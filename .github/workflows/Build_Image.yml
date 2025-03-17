@@ -38,12 +38,7 @@ jobs:
           platform=${{ matrix.platform }}
           echo "Arch=$(echo ${platform} | tr -d "linux/")" >> $GITHUB_ENV
           echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
-          echo $(cd `dirname $0`; pwd)
-          
-      - name: Set up the working directory
-        run: |
-        working-directory: $(cd `dirname $0`; pwd)/${{ inputs.name }}/${{ env.Arch }}
-            
+              
       - name: Check out code
         uses: actions/checkout@v2    
       
@@ -55,10 +50,12 @@ jobs:
       
       - name: Build multi-arch Docker image
         run: | 
-          ls
+          
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           # cd "${{ inputs.name }}/${{ env.Arch }}"
+          mv -f ${{ inputs.name }}/${{ env.Arch }}/* .
+          ls
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest .
           
       - name: Login to Docker Hub
