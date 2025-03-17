@@ -66,4 +66,6 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ env.Name }}:latest
+          labels: latest
+          tags: ${{ env.Name }}
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
