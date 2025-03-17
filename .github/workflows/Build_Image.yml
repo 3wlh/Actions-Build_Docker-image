@@ -56,8 +56,7 @@ jobs:
           cd "${{ inputs.name }}/${{ env.Arch }}"
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest --load .
           docker images
-          
-          docker save  ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}:latest.tar
+          docker save  ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}.tar
           
       - name: Upload bin directory
         uses: actions/upload-artifact@main
