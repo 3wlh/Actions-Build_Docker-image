@@ -65,8 +65,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          platforms: ${{ matrix.platform }}
           file: ${{ inputs.name }}/${{ env.Arch }}/Dockerfile
           push: true
-          tags: 3wlh/${{ env.Name }}:latest
+          tags: 3wlh/${{ env.Name }}_api_${{ env.Arch }}:latest
           
