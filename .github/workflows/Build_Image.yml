@@ -39,6 +39,10 @@ jobs:
           echo "Arch=$(echo ${platform} | tr -d "linux/")" >> $GITHUB_ENV
           echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
           
+      - name: Set up the working directory
+        run: |
+          working-directory: ./${{ inputs.name }}/${{ env.Arch }}
+            
       - name: Check out code
         uses: actions/checkout@v2    
       
@@ -65,6 +69,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: ${{ matrix.platform }}
-          labels: latest
-          tags: ${{ env.Name }}
-          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          push: true
+          tags: ${{ env.Name }}:latest
+          
