@@ -32,7 +32,6 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-          - linux/arm64/v8
     steps:
       - name: Prepare
         run: |
@@ -54,7 +53,7 @@ jobs:
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           cd "${{ inputs.name }}/${{ env.Arch }}"
-          docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest .
+          docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest --load .
           docker images
           docker save  ${{ env.Name }}:latest > ${{ env.Name }}_${{ env.Arch }}:latest.tar
           
