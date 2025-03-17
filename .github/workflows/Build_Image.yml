@@ -53,9 +53,8 @@ jobs:
           
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
-          # cd "${{ inputs.name }}/${{ env.Arch }}"
-          mv -f ${{ inputs.name }}/${{ env.Arch }}/* .
-          ls
+          cd "${{ inputs.name }}/${{ env.Arch }}"
+          # mv -f ${{ inputs.name }}/${{ env.Arch }}/* .
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest .
           
       - name: Login to Docker Hub
@@ -67,6 +66,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          file: ${{ inputs.name }}/${{ env.Arch }}/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           tags: ${{ env.Name }}:latest
