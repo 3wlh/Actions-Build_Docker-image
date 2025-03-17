@@ -38,10 +38,11 @@ jobs:
           platform=${{ matrix.platform }}
           echo "Arch=$(echo ${platform} | tr -d "linux/")" >> $GITHUB_ENV
           echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          echo $(cd `dirname $0`; pwd)
           
       - name: Set up the working directory
         run: |
-        working-directory: ${{ inputs.name }}/${{ env.Arch }}
+        working-directory: $(cd `dirname $0`; pwd)/${{ inputs.name }}/${{ env.Arch }}
             
       - name: Check out code
         uses: actions/checkout@v2    
