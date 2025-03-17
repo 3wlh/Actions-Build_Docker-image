@@ -18,7 +18,7 @@ on:
         options:
           - all
           - NapCat
-          - wxpusher
+
           
 env:
   Dockerfile: ${{ inputs.name }}
@@ -44,7 +44,7 @@ jobs:
       
       - name: Build multi-arch Docker image
         run: |
-          Arch=$(echo ${str} | tr -d "linux/")
+          Arch=$(echo ${{ matrix.arch }} | tr -d "linux/")
           cd "${{ inputs.name }}/${Arch}"
           docker buildx build --platform ${{ matrix.arch }} -t ${{ inputs.name }}:latest .
           
