@@ -46,7 +46,8 @@ jobs:
         run: |
           Arch=$(echo ${{ matrix.arch }} | tr -d "linux/")
           echo ${Arch}
-          echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')
+          echo "Image=${Name}" >> $GITHUB_ENV
           echo ${Name}
           cd "${{ inputs.name }}/${Arch}"
           docker buildx build --platform ${{ matrix.arch }} -t ${Name}:latest .
@@ -62,4 +63,4 @@ jobs:
         with:
           platforms: ${{ matrix.arch }}
           push: true
-          tags: 3wlh/${Name}:latest
+          tags: 3wlh/${env.Image}:latest
