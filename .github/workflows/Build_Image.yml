@@ -50,13 +50,21 @@ jobs:
       
       - name: Build multi-arch Docker image
         run: | 
+          mkdir Image
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           cd "${{ inputs.name }}/${{ env.Arch }}"
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest --load .
           docker images
-          docker save  ${{ env.Name }}:latest > ./${{ env.Name }}_${{ env.Arch }}:latest.tar
           
+          docker save  ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}:latest.tar
+          
+      - name: Upload bin directory
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ env.Name }}_${{ env.Arch }}
+          path: Image
+      
           
       - name: Login to Docker Hub
         uses: docker/login-action@v3
