@@ -68,5 +68,5 @@ jobs:
           platforms: ${{ matrix.platform }}
           file: ${{ inputs.name }}/${{ env.Arch }}/Dockerfile
           push: true
-          tags: 3wlh/${{ env.Name }}_${{ env.Arch }}:latest
+          tags: 3wlh/${{ env.Name }}:latest
           
