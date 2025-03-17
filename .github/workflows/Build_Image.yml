@@ -50,14 +50,20 @@ jobs:
       
       - name: Build multi-arch Docker image
         run: | 
-          mkdir Image
+          
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           cd "${{ inputs.name }}/${{ env.Arch }}"
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest --load .
           docker images
-          docker save  ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}.tar
+          docker save ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}.tar
           
+      - name: arrange files
+        run: | 
+          mkdir Image
+          docker images
+          docker save ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}.tar
+        
       - name: Upload bin directory
         uses: actions/upload-artifact@main
         with:
