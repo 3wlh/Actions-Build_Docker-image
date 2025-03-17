@@ -50,13 +50,10 @@ jobs:
       
       - name: Build multi-arch Docker image
         run: | 
-          
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           cd "${{ inputs.name }}/${{ env.Arch }}"
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest --load .
-          docker images
-          docker save ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}.tar
           
       - name: arrange files
         run: | 
