@@ -53,7 +53,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
       
       - name: Build multi-arch Docker image
-        run: |  
+        run: | 
+          ls
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           cd "${{ inputs.name }}/${{ env.Arch }}"
