@@ -50,7 +50,6 @@ jobs:
       
       - name: Build multi-arch Docker image
         run: | 
-          
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
           cd "${{ inputs.name }}/${{ env.Arch }}"
@@ -69,5 +68,5 @@ jobs:
           file: ${{ inputs.name }}/${{ env.Arch }}/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ env.Name }}:latest
+          tags: 3wlh/${{ env.Name }}:latest
           
