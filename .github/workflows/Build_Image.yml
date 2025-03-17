@@ -57,7 +57,7 @@ jobs:
           ls
           echo ${{ env.Arch }}
           echo ${{ env.Name }}
-          cd "${{ inputs.name }}/${{ env.Arch }}"
+          # cd "${{ inputs.name }}/${{ env.Arch }}"
           docker buildx build --platform ${{ matrix.platform }} -t ${{ env.Name }}:latest .
           
       - name: Login to Docker Hub
