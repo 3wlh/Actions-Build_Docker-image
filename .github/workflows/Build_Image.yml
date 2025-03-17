@@ -45,7 +45,9 @@ jobs:
       - name: Build multi-arch Docker image
         run: |
           Arch=$(echo ${{ matrix.arch }} | tr -d "linux/")
-          Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')
+          echo ${Arch}
+          echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          echo ${Name}
           cd "${{ inputs.name }}/${Arch}"
           docker buildx build --platform ${{ matrix.arch }} -t ${Name}:latest .
           
@@ -60,4 +62,4 @@ jobs:
         with:
           platforms: ${{ matrix.arch }}
           push: true
-          tags: 3wlh/${{ inputs.Source_name }}:latest
+          tags: 3wlh/${Name}:latest
