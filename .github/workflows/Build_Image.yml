@@ -60,6 +60,8 @@ jobs:
           mkdir Image
           docker images
           docker save ${{ env.Name }} > ./Image/${{ env.Name }}_${{ env.Arch }}.tar
+          cd Image
+          ls
         
       - name: Upload bin directory
         uses: actions/upload-artifact@main
