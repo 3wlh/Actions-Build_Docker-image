@@ -17,7 +17,7 @@ on:
         type: choice
         options:
           - all
-          - api
+          - NapCat
           - wxpusher
           
 env:
