@@ -4,8 +4,8 @@ on:
   repository_dispatch:
   workflow_dispatch:      
     inputs:  
-      name:
-        description: "Select the Source"
+      image:
+        description: "Select the Image"
         required: false
         default: "all"
         type: choice
@@ -14,14 +14,14 @@ on:
           - NapCat_api
 
 env:
-  Dockerfile: ${{ inputs.name }}
+  Image: ${{ inputs.image }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./${{ inputs.name }}
+        working-directory: ./${{ inputs.image }}
     steps:       
       - name: Check out code
         uses: actions/checkout@v4    
@@ -38,13 +38,13 @@ jobs:
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
-          echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
       
       - name: Buildx and Docker image push
         env:
           DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
-          # cd ${{ inputs.name }}
+          # cd ${{ inputs.image }}
           TAG=$(date "+%Y.%m.%d_%H%M%S")
           docker buildx build \
             --output "type=image,push=true" \
