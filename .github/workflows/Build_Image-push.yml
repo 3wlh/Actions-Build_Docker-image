@@ -14,7 +14,7 @@ on:
           - NapCat_api
 
 env:
-  Image: ${{ inputs.image }}
+  TZ: Asia/Shanghai
 
 jobs:
   build:
