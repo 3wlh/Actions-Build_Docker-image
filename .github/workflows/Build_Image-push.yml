@@ -3,6 +3,7 @@ name: Build and Image
 on:
   repository_dispatch:
   workflow_dispatch:      
+    inputs:  
       name:
         description: "Select the Source"
         required: false
@@ -12,7 +13,6 @@ on:
           - all
           - NapCat_api
 
-          
 env:
   Dockerfile: ${{ inputs.name }}
 
