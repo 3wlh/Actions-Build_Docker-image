@@ -2,14 +2,7 @@ name: Build and Image
 
 on:
   repository_dispatch:
-  workflow_dispatch:
-    inputs:
-      ssh:
-        description: "SSH connection to Actions"
-        required: false
-        default: false
-        type: boolean
-      
+  workflow_dispatch:      
       name:
         description: "Select the Source"
         required: false
@@ -41,12 +34,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
-      - name: Name
+
+      - name: Initial
         run: |
+          sudo timedatectl set-timezone "${TZ}"
           echo "Name=$(echo ${{ inputs.name }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
       
-      - name: Run buildx and push
+      - name: Buildx and Docker image push
         env:
           DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
@@ -55,7 +49,7 @@ jobs:
           docker buildx build \
             --output "type=image,push=true" \
             --platform linux/amd64,linux/arm64 \
-            --tag ${DOCKER_REPO}:$TAG \
+            # --tag ${DOCKER_REPO}:$TAG \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
             .
