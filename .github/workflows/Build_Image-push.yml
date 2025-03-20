@@ -12,6 +12,17 @@ on:
         options:
           - all
           - NapCat_api
+          - PaddleOCR
+          
+      platform:
+        description: "Select the platform"
+        required: false
+        default: "linux/amd64,linux/arm64"
+        type: choice
+        options:
+          - linux/amd64,linux/arm64
+          - linux/amd64
+          - linux/arm64
 
 env:
   TZ: Asia/Shanghai
@@ -45,13 +56,13 @@ jobs:
           DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
           # cd ${{ inputs.image }}
-          # TAG=$(date "+%Y.%m.%d_%H%M%S")
-          # --tag ${DOCKER_REPO}:$TAG \
+          TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")" \
           docker buildx build \
             --output "type=image,push=true" \
-            --platform linux/amd64,linux/arm64 \
-            --tag ${DOCKER_REPO}:latest \
+            --platform ${{ inputs.platform }} \
             --file ./Dockerfile \
+            --tag ${DOCKER_REPO}:latest \
+            ${TAG} \
             .
             
       - name: Docker Hub logout
