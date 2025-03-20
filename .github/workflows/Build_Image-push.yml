@@ -60,9 +60,9 @@ jobs:
           docker buildx build \
             --output "type=image,push=true" \
             --platform ${{ inputs.platform }} \
-            --file ./Dockerfile \
-            --tag ${DOCKER_REPO}:latest \
             ${TAG} \
+            --tag ${DOCKER_REPO}:latest \
+            --file ./Dockerfile \
             .
             
       - name: Docker Hub logout
