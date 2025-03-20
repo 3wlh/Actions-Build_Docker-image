@@ -8,10 +8,24 @@ protobuf==3.20.0 python-Levenshtein opencv-contrib-python opencv-python \
 paddlenlp==2.2.6 paddlepaddle==2.2.2 paddle2onnx==0.9.4 paddlehub \
 -i https://mirror.baidu.com/pypi/simple
 
+COPY PaddleOCR /PaddleOCR
 WORKDIR /PaddleOCR
 
+# RUN mkdir -p /PaddleOCR/inference/
+# ADD https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_server_v2.0_det_infer.tar /PaddleOCR/inference/
+# RUN tar xf /PaddleOCR/inference/ch_ppocr_server_v2.0_det_infer.tar -C /PaddleOCR/inference/
+
+# ADD https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar /PaddleOCR/inference/
+# RUN tar xf /PaddleOCR/inference/ch_ppocr_mobile_v2.0_cls_infer.tar -C /PaddleOCR/inference/
+
+# ADD https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_server_v2.0_rec_infer.tar /PaddleOCR/inference/
+# RUN tar xf /PaddleOCR/inference/ch_ppocr_server_v2.0_rec_infer.tar -C /PaddleOCR/inference/
+
+# https://pub-eec1e68fb3514432a025b74390bdb3a4.r2.dev/PaddleOCR.tar.gz
+
 ADD https://pub-eec1e68fb3514432a025b74390bdb3a4.r2.dev/PaddleOCR.tar.gz /PaddleOCR/
-RUN tar -xzf /PaddleOCR/inference/ch_ppocr_server_v2.0_rec_infer.tar -C /PaddleOCR/inference/
+
+
 
 RUN hub install deploy/hubserving/ocr_system/
 RUN hub install deploy/hubserving/ocr_cls/
