@@ -3,7 +3,17 @@ name: Build and Image
 on:
   repository_dispatch:
   workflow_dispatch:      
-    inputs:  
+    inputs:
+      platform:
+        description: "Select the platform"
+        required: false
+        default: "linux/amd64,linux/arm64"
+        type: choice
+        options:
+          - linux/amd64,linux/arm64
+          - linux/amd64
+          - linux/arm64
+          
       image:
         description: "Select the Image"
         required: false
@@ -14,16 +24,6 @@ on:
           - NapCat_api
           - PaddleOCR
           
-      platform:
-        description: "Select the platform"
-        required: false
-        default: "linux/amd64,linux/arm64"
-        type: choice
-        options:
-          - linux/amd64,linux/arm64
-          - linux/amd64
-          - linux/arm64
-
 env:
   TZ: Asia/Shanghai
 
