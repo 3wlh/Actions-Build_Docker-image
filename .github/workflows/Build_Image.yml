@@ -85,9 +85,9 @@ jobs:
 
       - name: docker images
         run: |
-          test -d "/images" || mkdir -p "/images"
+          test -d "/tmp/images" || mkdir -p "/tmp/images"
           platform="$(echo ${{ matrix.platform }} | tr '/' '_')"
-          file="/images/${{ env.Name }}-${platform}.tar"
+          file="/tmp/images/${{ env.Name }}-${platform}.tar"
           echo "${file} | 3wlh/${{ env.Name }} "
           docker images
           docker save -o ${file} 3wlh/${{ env.Name }}
