@@ -28,19 +28,6 @@ env:
   UPLOAD_BIN_DIR: true
 
 jobs:
-  jod_time:
-    name: Acquisition Time
-    runs-on: ubuntu-latest
-    outputs:
-      time: ${{steps.output_time.outputs.time}}
-    steps: 
-      - name: output Time
-        id: output_time
-        run: |
-          sudo timedatectl set-timezone "${TZ}"
-          echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
-
-jobs:
   build:
     name: Build for ${{ matrix.platform }}
     needs: jod_time
