@@ -1,4 +1,4 @@
-name: Build and Image
+name: Build and Image push
 
 on:
   repository_dispatch:
