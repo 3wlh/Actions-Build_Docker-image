@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [${{ inputs.platform }}]
+        platform: [linux/amd64,linux/arm64]
       env:
         Time: ${{ needs.jod_time.outputs.time }}
     steps:       
