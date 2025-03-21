@@ -90,7 +90,7 @@ jobs:
           file="./images/${{ env.Name }}-${platform}.tar"
           echo ${file}
           docker images
-          docker save ${{ env.DOCKER_REPO }} > ./images/${file}
+          docker save ${{ env.DOCKER_REPO }} > ${file}
           
       
       - name: Upload to bin directory
