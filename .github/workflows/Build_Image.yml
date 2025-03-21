@@ -87,7 +87,7 @@ jobs:
         run: |
           test -d "/tmp/images" || mkdir -p "/tmp/images"
           platform="$(echo ${{ matrix.platform }} | tr '/' '_')"
-          echo "arch=${platform}"  >> $GITHUB_OUTPUT
+          echo "arch=${platform}"  >> $GITHUB_ENV
           file="/tmp/images/${{ env.Name }}-${platform}.tar"
           echo "${file} | 3wlh/${{ env.Name }} "
           docker images
@@ -107,4 +107,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.Time }}
-          files: /images/*
+          files: /tmp/images/*
