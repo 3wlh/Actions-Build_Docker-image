@@ -85,14 +85,17 @@ jobs:
 
       - name: docker images
         run: |
+          test -d "images" || mkdir -p "images"
           docker images
+          docker save ${{ env.DOCKER_REPO }} > images/${{ env.DOCKER_REPO }}-${{ matrix.platform }}.tar
+          
       
       - name: Upload to bin directory
         uses: actions/upload-artifact@main
         if: ${{env.UPLOAD_BIN_DIR}} == 'true'
         with:
           name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
-          path: /
+          path: images
 
       - name: Upload to Release
         uses: softprops/action-gh-release@master
@@ -101,4 +104,4 @@ jobs:
         with:
           tag_name: ${{ env.Time }}
           body_path: release.txt
-          files: /*
+          files: images/*
