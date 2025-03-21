@@ -54,12 +54,13 @@ jobs:
           # cd ${{ inputs.image }}
           # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
           docker buildx build \
-            --output "type=image,--load" \
+            --output "type=image" \
             --platform ${{ inputs.platform }} \
             ${TAG} \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
-            .
+            . \
+            --load
 
       - name: docker images
         run: |
