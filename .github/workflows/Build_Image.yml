@@ -86,18 +86,3 @@ jobs:
       - name: docker images
         run: |
           docker images
-
-      - name: Upload to bin directory
-        uses: actions/upload-artifact@main
-        if: ${{env.UPLOAD_BIN_DIR}} == 'true'
-        with:
-          name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
-          path: /
-
-      - name: Upload to Release
-        uses: softprops/action-gh-release@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.Time }}
-          files: /*
