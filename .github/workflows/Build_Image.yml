@@ -60,8 +60,7 @@ jobs:
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
             .  
-
-        - name: Buildx and Docker image push
-          run: |
-            docker image ls
+      - name: Initial
+        run: |
+          docker images
           
