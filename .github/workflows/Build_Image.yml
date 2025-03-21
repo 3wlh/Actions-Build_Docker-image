@@ -25,13 +25,36 @@ on:
           
 env:
   TZ: Asia/Shanghai
+  UPLOAD_BIN_DIR: true
+
+jobs:
+  jod_time:
+    name: Acquisition Time
+    runs-on: ubuntu-latest
+    outputs:
+      time: ${{steps.output_time.outputs.time}}
+    steps: 
+      - name: output Time
+        id: output_time
+        run: |
+          sudo timedatectl set-timezone "${TZ}"
+          echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
+
 
 jobs:
   build:
+    name: Build for ${{ matrix.platform }}
+    needs: jod_time
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./${{ inputs.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [${{ inputs.platform }}]
+      env:
+        Time: ${{ needs.jod_time.outputs.time }}   
     steps:       
       - name: Check out code
         uses: actions/checkout@v4    
@@ -55,8 +78,7 @@ jobs:
           # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
           docker buildx build \
             --output "type=image" \
-            --platform ${{ inputs.platform }} \
-            ${TAG} \
+            --platform ${{ matrix.platform }} \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
             . \
@@ -65,3 +87,18 @@ jobs:
       - name: docker images
         run: |
           docker images
+      
+      - name: Upload to bin directory
+        uses: actions/upload-artifact@main
+        if: ${{env.UPLOAD_BIN_DIR}} == 'true'
+        with:
+          name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
+          path: /
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.Time }}
+          files: /*
