@@ -87,7 +87,7 @@ jobs:
       - name: docker images
         run: |
           docker images
-      
+
       - name: Upload to bin directory
         uses: actions/upload-artifact@main
         if: ${{env.UPLOAD_BIN_DIR}} == 'true'
