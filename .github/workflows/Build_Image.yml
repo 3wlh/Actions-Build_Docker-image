@@ -97,8 +97,8 @@ jobs:
         uses: actions/upload-artifact@main
         if: ${{env.UPLOAD_BIN_DIR}} == 'true'
         with:
-          name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
-          path: /tmp/images/
+          name: ${{ env.Name }}-$(echo ${{ matrix.platform }} | tr '/' '_')
+          path: /tmp/images
 
       - name: Upload to Release
         uses: softprops/action-gh-release@master
