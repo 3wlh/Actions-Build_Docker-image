@@ -91,14 +91,14 @@ jobs:
           echo "${file} | 3wlh/${{ env.Name }} "
           docker images
           docker save -o ${file} 3wlh/${{ env.Name }}
-          
+          ls "/tmp/images"
       
       - name: Upload to bin directory
         uses: actions/upload-artifact@main
         if: ${{env.UPLOAD_BIN_DIR}} == 'true'
         with:
           name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
-          path: /images
+          path: /tmp/images/
 
       - name: Upload to Release
         uses: softprops/action-gh-release@master
