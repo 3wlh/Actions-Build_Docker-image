@@ -40,6 +40,7 @@ jobs:
           sudo timedatectl set-timezone "${TZ}"
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
 
+
   jobs:
     name: Build for ${{ matrix.platform }}
     needs: jod_time
@@ -50,9 +51,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux/amd64,linux/arm64]
+        platform: [${{ inputs.platform }}]
       env:
-        Time: ${{ needs.jod_time.outputs.time }}   
+        Time: ${{ needs.jod_time.outputs.time }}
     steps:       
       - name: Check out code
         uses: actions/checkout@v4    
@@ -85,3 +86,19 @@ jobs:
       - name: docker images
         run: |
           docker images
+      
+      - name: Upload to bin directory
+        uses: actions/upload-artifact@main
+        if: ${{env.UPLOAD_BIN_DIR}} == 'true'
+        with:
+          name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
+          path: /
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.Time }}
+          body_path: release.txt
+          files: /*
