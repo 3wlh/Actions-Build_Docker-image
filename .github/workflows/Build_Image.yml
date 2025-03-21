@@ -85,9 +85,9 @@ jobs:
 
       - name: docker images
         run: |
-          test -d "images" || mkdir -p "images"
+          test -d "/images" || mkdir -p "/images"
           platform="$(echo ${{ matrix.platform }} | tr '/' '_')"
-          file="images/${{ env.Name }}-${platform}.tar"
+          file="/images/${{ env.Name }}-${platform}.tar"
           echo "${file} | 3wlh/${{ env.Name }} "
           docker images
           docker save -o ${file} 3wlh/${{ env.Name }}
@@ -98,7 +98,7 @@ jobs:
         if: ${{env.UPLOAD_BIN_DIR}} == 'true'
         with:
           name: ${{ env.DOCKER_REPO }}-${{ matrix.platform }}_${{ env.Time }}
-          path: ./images
+          path: /images
 
       - name: Upload to Release
         uses: softprops/action-gh-release@master
@@ -106,4 +106,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.Time }}
-          files: images/*
+          files: /images/*
