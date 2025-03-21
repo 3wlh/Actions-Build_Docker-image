@@ -61,7 +61,7 @@ jobs:
             --file ./Dockerfile \
             .  
 
-      - name: Buildx and Docker image push
-        run: |
-          docker image ls
+        - name: Buildx and Docker image push
+          run: |
+            docker image ls
           
