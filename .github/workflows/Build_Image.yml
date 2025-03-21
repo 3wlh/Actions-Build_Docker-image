@@ -87,8 +87,10 @@ jobs:
         run: |
           test -d "images" || mkdir -p "images"
           platform="$(echo ${{ matrix.platform }} | tr '/' '_')"
+          file="./images/${{ env.Name }}-${platform}.tar"
+          echo ${file}
           docker images
-          docker save ${{ env.DOCKER_REPO }} > ./images/${{ env.Name }}-${platform}.tar
+          docker save ${{ env.DOCKER_REPO }} > ./images/${file}
           
       
       - name: Upload to bin directory
