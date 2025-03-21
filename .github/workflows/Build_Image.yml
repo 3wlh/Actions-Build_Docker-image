@@ -47,6 +47,20 @@ jobs:
           sudo timedatectl set-timezone "${TZ}"
           echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
 
+      - name: Buildx and Docker image push
+        env:
+          DOCKER_REPO: 3wlh/${{ env.Name }}
+        run: |
+          # cd ${{ inputs.image }}
+          # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
+          docker buildx build \
+            --output "type=image,--load" \
+            --platform ${{ inputs.platform }} \
+            ${TAG} \
+            --tag ${DOCKER_REPO}:latest \
+            --file ./Dockerfile \
+            .
+
       - name: docker images
         run: |
           docker images
