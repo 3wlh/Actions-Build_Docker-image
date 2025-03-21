@@ -59,8 +59,9 @@ jobs:
             ${TAG} \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
-            .  
-      - name: Initial
+            . 
+            
+      - name: docker images
         run: |
           docker images
-          
+    
