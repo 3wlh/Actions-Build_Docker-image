@@ -1,4 +1,4 @@
-name: Build and Image
+name: Build and Image Release
 on:
   repository_dispatch:
   workflow_dispatch:      
