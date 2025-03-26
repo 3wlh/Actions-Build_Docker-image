@@ -36,13 +36,13 @@ jobs:
     steps:       
       - name: Check out code
         uses: actions/checkout@v4    
-        
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: docker login
         run: |
           docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
+        
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
         
       - name: Initial
         run: |
