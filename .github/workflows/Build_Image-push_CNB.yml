@@ -42,7 +42,7 @@ jobs:
 
       - name: docker login
         run: |
-          docker login -u cnb docker.cnb.cool ${{ secrets.CNB_TOKEN }}
+          docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
         
       - name: Initial
         run: |
