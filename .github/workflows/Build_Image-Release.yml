@@ -9,9 +9,9 @@ on:
         default: "linux/amd64,linux/arm64"
         type: choice
         options:
-          - [linux/amd64,linux/arm64]
-          - [linux/amd64]
-          - [linux/arm64]
+          - linux/amd64,linux/arm64
+          - linux/amd64
+          - linux/arm64
           
       image:
         description: "Select the Image"
@@ -21,7 +21,6 @@ on:
         options:
           - all
           - NapCat_api
-          - PaddleOCR
           
 env:
   TZ: Asia/Shanghai
@@ -38,7 +37,6 @@ jobs:
         id: output_time
         run: |
           sudo timedatectl set-timezone "${TZ}"
-          # echo "arch=$(echo ${{ inputs.platform }} )" >> $GITHUB_OUTPUT
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
 
   jobs:
@@ -52,9 +50,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        platform: [linux/amd64,linux/arm64]
         
-        platform: ${{ inputs.platform }}
-
     env:
       Time: ${{ needs.jod_time.outputs.time }}
     steps:       
