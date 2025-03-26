@@ -40,24 +40,24 @@ jobs:
           sudo timedatectl set-timezone "${TZ}"
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
 
-
   jobs:
     name: Build for ${{ matrix.platform }}
     needs: jod_time
     runs-on: ubuntu-latest
+    if: ${{ inputs.print_tags }}
     defaults:
       run:
         working-directory: ./${{ inputs.image }}
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux/amd64,linux/arm64]
+        platform: ${{ inputs.platform }}
     env:
       Time: ${{ needs.jod_time.outputs.time }}
     steps:       
       - name: Check out code
-        uses: actions/checkout@v4    
-        
+        uses: actions/checkout@v4        
+     
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -67,6 +67,7 @@ jobs:
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
+          echo "=$(echo ${{ inputs.platform }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
           echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
 
       - name: Buildx and Docker image push
