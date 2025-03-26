@@ -40,9 +40,9 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: docker login
         run: |
-          docker login --username cnb --password-stdin ${{ secrets.CNB_TOKEN }}
+          docker login -u cnb -p ${{ secrets.CNB_TOKEN }}
         
       - name: Initial
         run: |
