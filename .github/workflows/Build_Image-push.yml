@@ -22,6 +22,7 @@ on:
         options:
           - all
           - NapCat_api
+          - NapCat_Service
           - PaddleOCR
           
 env:
