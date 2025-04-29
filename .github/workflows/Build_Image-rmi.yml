@@ -47,6 +47,7 @@ jobs:
           DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
           docker pull ${{ env.DOCKER_REPO }}
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
           docker rmi ${{ env.DOCKER_REPO }}
             
       - name: Docker Hub logout
