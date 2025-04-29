@@ -45,9 +45,10 @@ jobs:
       
       - name: Delete and Docker.hub image
         env:
-          DOCKER_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.Name }}
+          DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
-          docker rmi 3wlh/${{ env.Name }}
+          docker search ${{ env.DOCKER_REPO }}
+          docker rmi ${{ env.DOCKER_REPO }}
             
       - name: Docker Hub logout
         if: always()
