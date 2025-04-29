@@ -41,13 +41,12 @@ jobs:
         run: |
           sudo timedatectl set-timezone "${TZ}"
           echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
-          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Delete and Docker.hub image
         env:
           DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
-          docker search ${{ env.DOCKER_REPO }}
+          docker pull ${{ env.DOCKER_REPO }}
           docker rmi ${{ env.DOCKER_REPO }}
             
       - name: Docker Hub logout
