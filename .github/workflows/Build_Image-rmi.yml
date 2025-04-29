@@ -46,7 +46,7 @@ jobs:
         env:
           DOCKER_REPO: 3wlh/${{ env.Name }}
         run: |
-          docker image delete ${DOCKER_REPO}
+          docker image delete ${{ env.Name }}
             .
             
       - name: Docker Hub logout
