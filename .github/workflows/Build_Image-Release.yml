@@ -44,14 +44,10 @@ jobs:
     name: Build for ${{ matrix.platform }}
     needs: jod_time
     runs-on: ubuntu-latest
-    if: ${{ inputs.print_tags }}
-    defaults:
-      run:
-        working-directory: ./${{ inputs.image }}
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux/amd64,linux/arm64]
+        platform: ${{ fromJSON(format('["{0}"]', replace(inputs.platform, ',', '","')) }}
         
     env:
       Time: ${{ needs.jod_time.outputs.time }}
