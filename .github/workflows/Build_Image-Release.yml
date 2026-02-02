@@ -21,6 +21,7 @@ on:
         options:
           - all
           - NapCat_api
+          - Photopea
           
 env:
   TZ: Asia/Shanghai
