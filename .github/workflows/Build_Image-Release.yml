@@ -33,12 +33,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       time: ${{steps.output_time.outputs.time}}
+      platform_json: ${{ steps.process_platform.outputs.platform_json }}
     steps: 
       - name: output Time
         id: output_time
         run: |
           sudo timedatectl set-timezone "${TZ}"
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
+            
+      - name: Process platform to JSON array
+        id: process_platform
+        run: |
+          PLATFORM_INPUT="${{ inputs.platform }}"
+          PLATFORM_JSON="[\"$(echo ${PLATFORM_INPUT} | sed 's/,/","/g')\"]"
+          echo "platform_json=${PLATFORM_JSON}" >> $GITHUB_OUTPUT
 
   jobs_Build:
     name: Build for ${{ matrix.platform }}
@@ -47,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJSON(format('["{0}"]', replace(inputs.platform, ',', '","')) }}
+        platform: ${{ fromJSON(needs.job_time.outputs.platform_json) }}
         
     env:
       Time: ${{ needs.jod_time.outputs.time }}
