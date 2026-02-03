@@ -62,7 +62,6 @@ jobs:
             --platform ${{ matrix.platform }} \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
-            --squash \
             --load \
             .
             
