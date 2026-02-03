@@ -8,7 +8,10 @@ docker load -i myimage.tar[:gz]
 ```
 cat myimage.tar[:gz] | docker load
 ```
-
+####  解压后加载
+```
+gunzip -c myimage.tar.gz | docker load
+```
 ## 导出镜像命令
 #### 保存单个镜像到文件
 ```
@@ -26,3 +29,8 @@ docker save <镜像名:标签> | tar -czf myimage.tar.gz -
 ```
 docker save <镜像名:标签> | gzip > myimage.tar.gz
 ```
+## 镜像查看
+#### 查看命令
+````
+docker images
+````
