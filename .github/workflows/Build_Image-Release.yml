@@ -38,9 +38,12 @@ jobs:
         
     env:
       time: ${{ needs.jod_Initial.outputs.time }}
-      name: ${{ toLower(inputs.image) }}
-      platform: ${{ toLower(replace(matrix.platform, '/', '_')) }}
-    steps:       
+    steps:
+      - name: Handle Variables
+        run: |
+          echo "name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          echo "platform=$(echo ${{ matrix.platform }} | tr '/' '_')" >> $GITHUB_ENV
+               
       - name: Check out code
         uses: actions/checkout@v4        
      
