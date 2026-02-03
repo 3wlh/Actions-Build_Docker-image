@@ -7,7 +7,8 @@ RUN apk update && apk upgrade
 RUN apk add git python3
 
 RUN git clone --progress --verbose https://gitflic.ru/project/photopea-v2/photopea-v-2.git . && \
-	rm -fr _vendor Updater.py README.md .git www.photopea.com\rsrc\fonts\fonts.png \
+	rm -fr _vendor Updater.py README.md .git \
+	rm -fr www.photopea.com/rsrc/fonts/fonts.png www.photopea.com/img/* \
 	wget -qO - http://script.11121314.xyz/Docker/photopea/photopea.sh | sh
 
 RUN wget -O photopea.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea.tar.gz && \
