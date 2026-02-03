@@ -27,4 +27,4 @@ WORKDIR /app/photopea
 
 EXPOSE 8887
 
-ENTRYPOINT ["python", "-m", "http.server", "--directory", "photopea", "8887"]
+ENTRYPOINT ["python3", "-m", "http.server", "--directory", "photopea", "8887"]
