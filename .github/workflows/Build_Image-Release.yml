@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       time: ${{steps.output_time.outputs.time}}
-      platform_json: ${{ steps.process_platform.outputs.platform_json }}
+      platform: ${{ steps.output_platform.outputs.platform }}
     steps: 
       - name: output Time
         id: output_time
@@ -42,11 +42,11 @@ jobs:
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
             
       - name: Process platform to JSON array
-        id: process_platform
+        id: output_platform
         run: |
           PLATFORM_INPUT="${{ inputs.platform }}"
           PLATFORM_JSON="[\"$(echo ${PLATFORM_INPUT} | sed 's/,/","/g')\"]"
-          echo "platform_json=${PLATFORM_JSON}" >> $GITHUB_OUTPUT
+          echo "platform=${PLATFORM_JSON}" >> $GITHUB_OUTPUT
 
   jobs_Build:
     name: Build for ${{ matrix.platform }}
@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJSON(needs.job_time.outputs.platform_json) }}
+        platform: ${{ fromJSON(needs.job_time.outputs.platform) }}
         
     env:
       Time: ${{ needs.jod_time.outputs.time }}
