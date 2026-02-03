@@ -6,7 +6,7 @@ on:
       platform:
         description: "Select the platform"
         required: false
-        default: [linux/amd64,linux/arm64]
+        default: "[linux/amd64,linux/arm64]"
         type: choice
         options:
           - [linux/amd64,linux/arm64]
