@@ -1,10 +1,10 @@
 FROM alpine
 
-WORKDIR /var/run/photopea
+WORKDIR /app/photopea
 
 RUN apk update && apk upgrade
 
-RUN apk add git python3
+RUN apk add git
 
 RUN git clone --progress --verbose https://gitflic.ru/project/photopea-v2/photopea-v-2.git . && \
 	rm -fr _vendor Updater.py README.md .git && \
@@ -16,8 +16,15 @@ RUN wget -O photopea.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/r
 	tar -zxf photopea.tar.gz -C www.photopea.com/rsrc/fonts/ && rm -fr photopea.tar.gz && \
 	sed -i '/var FNTS = {/,/};/d' www.photopea.com/code/dbs/DBS1751979998.js && \
 	cat www.photopea.com/rsrc/fonts/FNTS.js >> www.photopea.com/code/dbs/DBS1751979998.js && \
-	mv -f www.photopea.com/rsrc/fonts/22.js www.photopea.com/code/lang/
+	mv -f www.photopea.com/rsrc/fonts/22.js www.photopea.com/code/lang/ && \
+	mv www.photopea.com photopea
+
+FROM python:alpine
+
+COPY --from=builder  /app/photopea/ /app/
+
+WORKDIR /app/photopea
 
 EXPOSE 8887
 
-ENTRYPOINT ["python3", "-m", "http.server", "--directory", "www.photopea.com", "8887"]
+ENTRYPOINT ["python", "-m", "http.server", "--directory", "photopea", "8887"]
