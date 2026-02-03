@@ -9,9 +9,9 @@ on:
         default: "[linux/amd64,linux/arm64]"
         type: choice
         options:
-          - '["linux/amd64","linux/arm64"]'
-          - '["linux/amd64"]'
-          - '["linux/arm64"]'
+          - '[linux/amd64,linux/arm64]'
+          - '[linux/amd64]'
+          - '[linux/arm64]'
           
       image:
         description: "Select the Image"
@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJSON(inputs.platform) }}
+        platform: ${{ inputs.platform }}
         
     env:
       Time: ${{ needs.jod_time.outputs.time }}
