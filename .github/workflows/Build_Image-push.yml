@@ -24,6 +24,7 @@ on:
           - NapCat_api
           - NapCat_Service
           - PaddleOCR
+          - Photopea
           
 env:
   TZ: Asia/Shanghai
@@ -50,13 +51,13 @@ jobs:
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
-          echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          echo "name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
       
       - name: Buildx and Docker image push
         env:
-          DOCKER_REPO: 3wlh/${{ env.Name }}
+          DOCKER_REPO: 3wlh/${{ env.name }}
         run: |
-          # cd ${{ inputs.image }}
+          cd ${{ inputs.image }}
           # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
           docker buildx build \
             --output "type=image,push=true" \
