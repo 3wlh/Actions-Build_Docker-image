@@ -2,11 +2,11 @@
 ## 导入镜像命令
 #### 从文件加载镜像
 ```
-docker load -i myimage.tar 
+docker load -i myimage.tar[:gz]
 ```
 #### 标准输入加载镜像
 ```
-cat myimage.tar | docker load
+cat myimage.tar[:gz] | docker load
 ```
 
 ## 导出镜像命令
