@@ -6,12 +6,12 @@ on:
       platform:
         description: "Select the platform"
         required: false
-        default: "linux/amd64,linux/arm64"
+        default: "[linux/amd64,linux/arm64]"
         type: choice
         options:
-          - linux/amd64,linux/arm64
-          - linux/amd64
-          - linux/arm64
+          - '["linux/amd64","linux/arm64"]'
+          - '["linux/amd64"]'
+          - '["linux/arm64"]'
           
       image:
         description: "Select the Image"
@@ -33,20 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       time: ${{steps.output_time.outputs.time}}
-      platform: ${{ steps.output_platform.outputs.platform }}
     steps: 
       - name: output Time
         id: output_time
         run: |
           sudo timedatectl set-timezone "${TZ}"
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
-            
-      - name: Process platform to JSON array
-        id: output_platform
-        run: |
-          PLATFORM_INPUT="${{ inputs.platform }}"
-          PLATFORM_JSON="[\"$(echo ${PLATFORM_INPUT} | sed 's/,/","/g')\"]"
-          echo "platform=${PLATFORM_JSON}" >> $GITHUB_OUTPUT
 
   jobs_Build:
     name: Build for ${{ matrix.platform }}
@@ -55,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJSON(needs.job_time.outputs.platform) }}
+        platform: ${{ fromJSON(inputs.platform) }}
         
     env:
       Time: ${{ needs.jod_time.outputs.time }}
@@ -102,7 +94,7 @@ jobs:
       
       - name: Upload to bin directory
         uses: actions/upload-artifact@main
-        if: ${{env.UPLOAD_BIN_DIR}} == 'true'
+        if: ${{ env.UPLOAD_BIN_DIR == 'true' }} 
         with:
           name: ${{ env.Name }}-${{ env.arch }}
           path: /tmp/images
