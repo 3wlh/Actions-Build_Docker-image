@@ -28,21 +28,8 @@ env:
   UPLOAD_BIN_DIR: true
 
 jobs:
-  jod_time:
-    name: Acquisition Time
-    runs-on: ubuntu-latest
-    outputs:
-      time: ${{steps.output_time.outputs.time}}
-    steps: 
-      - name: output Time
-        id: output_time
-        run: |
-          sudo timedatectl set-timezone "${TZ}"
-          echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_OUTPUT
-
   jobs_Build:
     name: Build for ${{ matrix.platform }}
-    needs: jod_time
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -50,7 +37,9 @@ jobs:
         platform: ${{ fromJSON(inputs.platform) }}
         
     env:
-      Time: ${{ needs.jod_time.outputs.time }}
+      time: ${{ needs.jod_Initial.outputs.time }}
+      name: $(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')
+      platform: $(echo ${{ matrix.platform }} | tr '/' '_')
     steps:       
       - name: Check out code
         uses: actions/checkout@v4        
@@ -61,14 +50,9 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Initial
-        run: |
-          sudo timedatectl set-timezone "${TZ}"
-          echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
-
-      - name: Buildx and Docker image push
+      - name: Buildx Build Docker image
         env:
-          DOCKER_REPO: 3wlh/${{ env.Name }}
+          DOCKER_REPO: 3wlh/${{ env.name }}
         run: |
           cd ${{ inputs.image }}
           # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
@@ -80,28 +64,43 @@ jobs:
             . \
             --load
 
-      - name: docker images
+      - name: Docker Export images
         run: |
           test -d "/tmp/images" || mkdir -p "/tmp/images"
-          platform="$(echo ${{ matrix.platform }} | tr '/' '_')"
-          echo "arch=${platform}"  >> $GITHUB_ENV
-          file="/tmp/images/${{ env.Name }}-${platform}.tar"
-          echo "${file} | 3wlh/${{ env.Name }} "
+          image_name="3wlh/${{ env.name }}:latest"
+          file="/tmp/images/${{ env.name }}-${{ env.platform }}.tar.gz"
+          echo "${file} | ${image_name} "
           docker images
-          docker save -o ${file} 3wlh/${{ env.Name }}:latest
+          docker save ${image_name} | gzip > ${file}
           ls "/tmp/images"
       
-      - name: Upload to bin directory
+      - name: Upload Directory
         uses: actions/upload-artifact@main
         if: ${{ env.UPLOAD_BIN_DIR == 'true' }} 
         with:
-          name: ${{ env.Name }}-${{ env.arch }}
+          name: ${{ env.name }}-${{ env.platform }}
           path: /tmp/images
-
+  
+  jod_Release:
+    name: Upload Release
+    needs: jobs_Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initial
+        run: |
+          sudo timedatectl set-timezone "${TZ}"
+          echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_ENV
+          test -d "/tmp/images" || mkdir -p "/tmp/images"
+       
+      - name: Download Directory
+        uses: actions/download-artifact@main
+        with:
+          path: /tmp/images
+         
       - name: Upload to Release
         uses: softprops/action-gh-release@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.Time }}
+          tag_name: ${{ env.time }}
           files: /tmp/images/*
