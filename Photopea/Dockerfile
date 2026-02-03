@@ -10,14 +10,10 @@ RUN git clone --progress --verbose https://gitflic.ru/project/photopea-v2/photop
 	rm -fr _vendor Updater.py README.md .git && \
 	rm -fr www.photopea.com/rsrc/fonts/fonts.png www.photopea.com/img/*
 
-RUN wget -qO - http://script.11121314.xyz/Docker/photopea/photopea.sh | sh
-
 RUN wget -O photopea.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea.tar.gz && \
-	tar -zxf photopea.tar.gz -C www.photopea.com/rsrc/fonts/ && rm -fr photopea.tar.gz && \
-	sed -i '/var FNTS = {/,/};/d' www.photopea.com/code/dbs/DBS1751979998.js && \
-	cat www.photopea.com/rsrc/fonts/FNTS.js >> www.photopea.com/code/dbs/DBS1751979998.js && \
-	mv -f www.photopea.com/rsrc/fonts/22.js www.photopea.com/code/lang/ && \
-	mv www.photopea.com photopea
+	tar -zxf photopea.tar.gz -C www.photopea.com/rsrc/fonts/ && rm -fr photopea.tar.gz
+	
+RUN wget -qO - http://script.11121314.xyz/Docker/photopea/photopea.sh | sh
 
 FROM python:alpine
 
