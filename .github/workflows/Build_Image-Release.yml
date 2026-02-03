@@ -36,8 +36,6 @@ jobs:
       matrix:
         platform: ${{ fromJSON(inputs.platform) }}
         
-    env:
-      time: ${{ needs.jod_Initial.outputs.time }}
     steps:
       - name: Handle Variables
         run: |
@@ -88,18 +86,23 @@ jobs:
     name: Upload Release
     needs: jobs_Build
     runs-on: ubuntu-latest
+    env:
+      image_path: "/tmp/images"
     steps:
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
           echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_ENV
-          test -d "/tmp/images" || mkdir -p "/tmp/images"
+          test -d "${{ env.image_path }}" || mkdir -p "${{ env.image_path }}"
        
       - name: Download Directory
         uses: actions/download-artifact@main
         with:
           path: /tmp/images
-         
+          
+      - name: Display structure of downloaded files
+        run: ls -R /tmp/images
+        
       - name: Upload to Release
         uses: softprops/action-gh-release@master
         env:
