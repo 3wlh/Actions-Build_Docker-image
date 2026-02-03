@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine AS builder
 
 WORKDIR /app/photopea
 
