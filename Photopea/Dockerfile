@@ -19,7 +19,7 @@ FROM python:alpine
 
 COPY --from=builder  /app/photopea/ /app/
 
-WORKDIR /app/photopea
+WORKDIR /app
 
 EXPOSE 8887
 
