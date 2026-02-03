@@ -62,8 +62,10 @@ jobs:
             --platform ${{ matrix.platform }} \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
+            --no-cache \
+            --load \
             . \
-            --load
+            
 
       - name: Docker Export images
         run: |
