@@ -64,7 +64,6 @@ jobs:
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
-          echo "=$(echo ${{ inputs.platform }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
           echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
 
       - name: Buildx and Docker image push
