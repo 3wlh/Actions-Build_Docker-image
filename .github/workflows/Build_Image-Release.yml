@@ -38,8 +38,8 @@ jobs:
         
     env:
       time: ${{ needs.jod_Initial.outputs.time }}
-      name: $(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')
-      platform: $(echo ${{ matrix.platform }} | tr '/' '_')
+      name: ${{ toLower(inputs.image) }}
+      platform: ${{ toLower(replace(matrix.platform, '/', '_')) }}
     steps:       
       - name: Check out code
         uses: actions/checkout@v4        
