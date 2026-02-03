@@ -6,7 +6,7 @@ on:
       platform:
         description: "Select the platform"
         required: false
-        default: "[linux/amd64,linux/arm64]"
+        default: [linux/amd64,linux/arm64]
         type: choice
         options:
           - [linux/amd64,linux/arm64]
@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ inputs.platform }}
+        platform: ${{ fromJSON(inputs.platform) }}
         
     env:
       Time: ${{ needs.jod_time.outputs.time }}
