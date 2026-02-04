@@ -14,14 +14,16 @@ RUN wget -O photopea.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/r
 	
 RUN wget -qO - http://script.11121314.xyz/Docker/photopea/photopea.sh | sh
 
-FROM python:alpine
+RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
+	wget -O web https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea.tar.gz && \
+	chmod +x ./web
+
+FROM alpine
 
 COPY --from=builder  /app/photopea/ /app/
 
 WORKDIR /app
 
-VOLUME /app/rsrc/fonts/
-
 EXPOSE 8887
 
-ENTRYPOINT ["python3", "-m", "http.server", "--directory", "photopea", "8887"]
+ENTRYPOINT ["web", "-p", "8887", "-d", "photopea", "-token", ""${token}""]
