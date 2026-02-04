@@ -25,5 +25,3 @@ COPY --from=builder  /app/photopea/ /app/
 WORKDIR /app
 
 EXPOSE 8887
-
-CMD ["./web", "-p", "8887", "-d", "photopea", "-token", "\"\${token}\""]
