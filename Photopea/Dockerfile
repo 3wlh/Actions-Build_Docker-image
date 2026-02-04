@@ -26,4 +26,4 @@ WORKDIR /app
 
 EXPOSE 8887
 
-ENTRYPOINT ["web", "-p", "8887", "-d", "photopea", "-token", ""${token}""]
+CMD ["./web", "-p", "8887", "-d", "photopea", "-token", "\"\${token}\""]
