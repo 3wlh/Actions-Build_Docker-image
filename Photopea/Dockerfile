@@ -15,7 +15,7 @@ RUN wget -O photopea.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/r
 RUN wget -qO - http://script.11121314.xyz/Docker/photopea/photopea.sh | sh
 
 RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
-	wget -O web https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea.tar.gz && \
+	wget -O web https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea_${arch} && \
 	chmod +x ./web
 
 FROM alpine
