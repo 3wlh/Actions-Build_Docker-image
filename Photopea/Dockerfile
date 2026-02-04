@@ -25,3 +25,5 @@ COPY --from=builder  /app/photopea/ /app/
 WORKDIR /app
 
 EXPOSE 8887
+
+ENTRYPOINT ["./web", "-p", "8887", "-d", "photopea"]
