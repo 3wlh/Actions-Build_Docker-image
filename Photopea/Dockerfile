@@ -15,12 +15,12 @@ RUN wget -O www.photopea.com.tar.gz \
 	tar -zxf www.photopea.com.tar.gz -C www.photopea.com && rm -fr www.photopea.com.tar.gz
 
 
-RUN wget -O fonts.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea.tar.gz && \
+RUN wget -O fonts.tar.gz https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/fonts.tar.gz && \
 	tar -zxf fonts.tar.gz -C www.photopea.com/rsrc/fonts/ && rm -fr fonts.tar.gz
 	
 RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
-	wget -O web https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea_${arch} && \
-	chmod +x ./web
+	wget -O service https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea_${arch} && \
+	chmod +x ./service
 
 FROM alpine
 
@@ -30,4 +30,4 @@ WORKDIR /app
 
 EXPOSE 8887
 
-ENTRYPOINT ["./web", "-p", "8887", "-d", "photopea"]
+ENTRYPOINT ["./service", "-p", "8887", "-d", "photopea"]
