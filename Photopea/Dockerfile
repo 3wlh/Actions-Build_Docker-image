@@ -10,7 +10,7 @@ RUN apk add git
 #	rm -fr _vendor Updater.py README.md .git
 	
 RUN wget -O www.photopea.com.tar.gz \
-	https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/www.photopea.com.tar.gz && \
+	https://github.com/3wlh/Actions-Build_Docker-image/releases/download/photopea/photopea-2.7.tar.gz && \
 	mkdir -p www.photopea.com && \
 	tar -zxf www.photopea.com.tar.gz -C www.photopea.com && rm -fr www.photopea.com.tar.gz
 
