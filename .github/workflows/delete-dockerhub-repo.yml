@@ -4,9 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       repo_name:
-        description: '要删除的 Docker Hub 仓库名（格式：用户名/仓库名）'
+        description: '要删除的 Docker Hub 仓库名'
         required: true
-        default: '3wlh/napcat_service'
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - NapCat_api
+          - NapCat_Service
+          - PaddleOCR
+          - Photopea
 
 jobs:
   delete-dockerhub-repo:
@@ -27,7 +34,7 @@ jobs:
             -d "{\"username\":\"${{ secrets.DOCKERHUB_USERNAME }}\",\"password\":\"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
             https://hub.docker.com/v2/users/login/)
           
-          # 提取并验证 Token
+          # 提取并验证 Token（无 exit，仅更新状态标记）
           DOCKERHUB_AUTH_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.token')
           if [ "$DOCKERHUB_AUTH_TOKEN" != "null" ] && [ -n "$DOCKERHUB_AUTH_TOKEN" ]; then
             echo "token=$DOCKERHUB_AUTH_TOKEN" >> $GITHUB_OUTPUT
@@ -37,15 +44,12 @@ jobs:
             echo "❌ Docker Hub 登录失败！返回信息：$AUTH_RESPONSE"
           fi
 
-      - name: 列出所有仓库并验证目标仓库存在
-        id: check-repo
+      - name: 列出所有仓库并处理目标仓库名
+        id: process-repo
         if: steps.get-token.outputs.auth_success == 'true'
         run: |
-          # 初始化状态标记
-          echo "repo_exists=false" >> $GITHUB_OUTPUT
-          
-          echo -e "\n📋 正在列出 ${{ secrets.DOCKERHUB_USERNAME }} 账号下所有仓库："
-          echo "----------------------------------------"
+          # 初始化输出标记
+          echo "target_repos=" >> $GITHUB_OUTPUT
           
           # 调用 API 获取仓库列表
           REPO_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
@@ -53,50 +57,76 @@ jobs:
           
           # 拼接完整仓库名（namespace + name）
           ALL_REPOS=$(echo "$REPO_RESPONSE" | jq -r '.results[] | .namespace + "/" + .name')
+          echo "ALL_REPOS=$ALL_REPOS" >> $GITHUB_ENV
           
-          # 输出所有仓库
+          # 输出所有仓库（无 exit，仅提示）
+          echo -e "\n📋 账号下所有仓库："
+          echo "----------------------------------------"
           if [ -z "$ALL_REPOS" ]; then
             echo "❌ 账号下无任何仓库！"
           else
             echo "$ALL_REPOS"
           fi
           
-          # 验证目标仓库是否存在
-          TARGET_REPO="${{ github.event.inputs.repo_name }}"
-          echo -e "\n----------------------------------------"
-          if echo "$ALL_REPOS" | grep -q "^$TARGET_REPO$"; then
-            echo "✅ 验证通过：目标仓库 $TARGET_REPO 存在！"
-            echo "repo_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ 验证失败：目标仓库 $TARGET_REPO 不存在！"
-            echo "🔍 账号下真实存在的仓库："
-            echo "$ALL_REPOS"
+          # 处理下拉选择的仓库名：自动拼接+转小写（无 exit）
+          SELECTED_REPO="${{ github.event.inputs.repo_name }}"
+          USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+          TARGET_REPOS=""
+          
+          if [ "$SELECTED_REPO" = "all" ] && [ -n "$ALL_REPOS" ]; then
+            # 选择all且有仓库：删除所有仓库
+            echo -e "\n✅ 选择删除所有仓库"
+            TARGET_REPOS="$ALL_REPOS"
+          elif [ "$SELECTED_REPO" != "all" ]; then
+            # 选择单个仓库：转小写+拼接用户名
+            LOWER_REPO=$(echo "$SELECTED_REPO" | tr 'A-Z' 'a-z')
+            FULL_REPO="$USERNAME/$LOWER_REPO"
+            echo -e "\n✅ 处理后的完整仓库名：$FULL_REPO"
+            
+            # 验证仓库是否存在（无 exit，仅提示）
+            if echo "$ALL_REPOS" | grep -q "^$FULL_REPO$"; then
+              TARGET_REPOS="$FULL_REPO"
+              echo "✅ 仓库 $FULL_REPO 存在，准备删除"
+            else
+              echo "❌ 仓库 $FULL_REPO 不存在！"
+            fi
           fi
+          
+          # 输出目标仓库列表（供后续删除步骤使用）
+          echo "target_repos=$TARGET_REPOS" >> $GITHUB_OUTPUT
 
-      - name: 删除 Docker Hub 仓库（仅验证通过后执行）
-        if: steps.check-repo.outputs.repo_exists == 'true'
+      - name: 删除 Docker Hub 仓库
+        if: steps.process-repo.outputs.target_repos != ''
         run: |
-          REPO="${{ github.event.inputs.repo_name }}"
-          NAMESPACE=$(echo "$REPO" | cut -d'/' -f1)
-          REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
-          
-          echo -e "\n⚠️ 开始删除仓库：$REPO"
-          echo "此操作不可逆，正在执行删除..."
-          
-          # 执行删除 API 请求
-          RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null \
-            -X DELETE \
-            -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
-            -H "Content-Type: application/json" \
-            https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPO_NAME)
-          
-          # 结果反馈（无 exit 1，仅输出提示）
-          if [ "$RESPONSE" = "204" ]; then
-            echo "✅ 仓库 $REPO 删除成功！"
-          elif [ "$RESPONSE" = "403" ]; then
-            echo "❌ 删除失败：Token 缺少 Delete 权限！"
-          elif [ "$RESPONSE" = "404" ]; then
-            echo "❌ 删除失败：仓库 $REPO 已被删除！"
-          else
-            echo "❌ 删除失败，HTTP 状态码：$RESPONSE"
-          fi
+          # 遍历所有要删除的仓库（无 exit）
+          for REPO in ${{ env.ALL_REPOS }}; do
+            # 仅删除目标仓库（all则删除全部，单个则只删指定）
+            if [ "${{ github.event.inputs.repo_name }}" = "all" ] || [ "$REPO" = "${{ steps.process-repo.outputs.target_repos }}" ]; then
+              NAMESPACE=$(echo "$REPO" | cut -d'/' -f1)
+              REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
+              
+              echo -e "\n⚠️ 开始删除仓库：$REPO"
+              echo "此操作不可逆，正在执行删除..."
+              
+              # 执行删除 API 请求
+              RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null \
+                -X DELETE \
+                -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
+                -H "Content-Type: application/json" \
+                https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPO_NAME)
+              
+              # 状态码判断（无 exit，仅输出提示）
+              if [ "$RESPONSE" = "204" ]; then
+                echo "✅ 仓库 $REPO 删除成功！（同步删除完成）"
+              elif [ "$RESPONSE" = "202" ]; then
+                echo "✅ 仓库 $REPO 删除请求已提交！（202=后台异步处理，建议5分钟后检查）"
+              elif [ "$RESPONSE" = "403" ]; then
+                echo "❌ 仓库 $REPO 删除失败：Token 缺少 Delete 权限！"
+              elif [ "$RESPONSE" = "404" ]; then
+                echo "❌ 仓库 $REPO 删除失败：不存在或已被删除！"
+              else
+                echo "❌ 仓库 $REPO 删除失败，状态码：$RESPONSE"
+              fi
+            fi
+          done
+          echo -e "\n💡 状态码说明：202=异步删除、204=同步删除、403=权限不足、404=仓库不存在"
