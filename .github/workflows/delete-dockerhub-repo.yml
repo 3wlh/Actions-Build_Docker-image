@@ -1,4 +1,4 @@
-name: Delete Docker Hub Repository (Fixed)
+name: Delete Docker Hub Repository
 
 on:
   workflow_dispatch:
@@ -6,6 +6,7 @@ on:
       repo_name:
         description: '要删除的 Docker Hub 仓库名（格式：用户名/仓库名）'
         required: true
+        # 可选：设置你最常删的仓库为默认值
         default: '3wlh/napcat_service'
 
 jobs:
@@ -15,26 +16,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get Docker Hub auth token
+      - name: 获取 Docker Hub 认证 Token
         id: get-token
         run: |
-          # 获取并验证 Docker Hub 认证 Token
+          # 登录并获取 Token
           AUTH_RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -d "{\"username\":\"${{ secrets.DOCKERHUB_USERNAME }}\",\"password\":\"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
             https://hub.docker.com/v2/users/login/)
           
+          # 提取并验证 Token
           DOCKERHUB_AUTH_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.token')
-          
           if [ "$DOCKERHUB_AUTH_TOKEN" = "null" ] || [ -z "$DOCKERHUB_AUTH_TOKEN" ]; then
-            echo "❌ 登录失败，返回信息：$AUTH_RESPONSE"
+            echo "❌ Docker Hub 登录失败！返回信息：$AUTH_RESPONSE"
             exit 1
           fi
           
           echo "token=$DOCKERHUB_AUTH_TOKEN" >> $GITHUB_OUTPUT
-          echo "✅ 认证成功，用户名：${{ secrets.DOCKERHUB_USERNAME }}"
+          echo "✅ 认证成功！用户名：${{ secrets.DOCKERHUB_USERNAME }}"
 
-      - name: 列出账号下所有仓库（修复字段提取逻辑）
+      - name: 列出所有仓库并验证目标仓库存在
+        id: check-repo
         run: |
           echo -e "\n📋 正在列出 ${{ secrets.DOCKERHUB_USERNAME }} 账号下所有仓库："
           echo "----------------------------------------"
@@ -43,51 +45,50 @@ jobs:
           REPO_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
             "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/")
           
-          # 修复：拼接 namespace + name 得到完整仓库名（API 无 full_name 字段）
+          # 拼接完整仓库名（namespace + name）
           ALL_REPOS=$(echo "$REPO_RESPONSE" | jq -r '.results[] | .namespace + "/" + .name')
           
-          # 输出真实仓库列表
-          echo "$ALL_REPOS"
+          # 输出所有仓库（清晰展示）
+          if [ -z "$ALL_REPOS" ]; then
+            echo "❌ 账号下无任何仓库！"
+            exit 1
+          else
+            echo "$ALL_REPOS"
+          fi
           
           # 验证目标仓库是否存在
           TARGET_REPO="${{ github.event.inputs.repo_name }}"
           echo -e "\n----------------------------------------"
           if echo "$ALL_REPOS" | grep -q "^$TARGET_REPO$"; then
             echo "✅ 验证通过：目标仓库 $TARGET_REPO 存在！"
-          else
-            echo "❌ 验证失败：目标仓库 $TARGET_REPO 不存在！"
-            echo "🔍 账号下真实存在的仓库列表："
-            echo "$ALL_REPOS"
-            exit 1
+            echo "repo_exists=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Delete Docker Hub repository
+      - name: 删除 Docker Hub 仓库（仅验证通过后执行）
+        if: steps.check-repo.outputs.repo_exists == 'true'
         run: |
           REPO="${{ github.event.inputs.repo_name }}"
           NAMESPACE=$(echo "$REPO" | cut -d'/' -f1)
           REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
           
-          echo -e "\n⚠️ 即将删除 Docker Hub 仓库：$REPO"
-          echo "此操作不可逆！请确认后等待删除..."
+          echo -e "\n⚠️ 开始删除仓库：$REPO"
+          echo "此操作不可逆，正在执行删除..."
           
-          # 执行删除
+          # 执行删除 API 请求
           RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null \
             -X DELETE \
             -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
             -H "Content-Type: application/json" \
             https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPO_NAME)
           
-          # 结果判断
+          # 结果反馈
           if [ "$RESPONSE" = "204" ]; then
             echo "✅ 仓库 $REPO 删除成功！"
           elif [ "$RESPONSE" = "403" ]; then
-            echo "❌ 删除失败：Token 没有 Delete 权限，请检查 Docker Hub Token 权限配置"
-            exit 1
-          elif [ "$RESPONSE" = "401" ]; then
-            echo "❌ 删除失败：认证失效，请检查 GitHub Secrets 中的用户名/Token 是否正确"
+            echo "❌ 删除失败：Token 缺少 Delete 权限！"
             exit 1
           elif [ "$RESPONSE" = "404" ]; then
-            echo "❌ 删除失败：仓库 $REPO 已被删除或不存在"
+            echo "❌ 删除失败：仓库 $REPO 已被删除！"
             exit 1
           else
             echo "❌ 删除失败，HTTP 状态码：$RESPONSE"
