@@ -18,13 +18,12 @@ jobs:
       - name: Get Docker Hub auth token
         id: get-token
         run: |
-          # 修复：把变量从单引号中移出，用双引号包裹 JSON 内容
+          # 获取并验证 Docker Hub 认证 Token
           AUTH_RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -d "{\"username\":\"${{ secrets.DOCKERHUB_USERNAME }}\",\"password\":\"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
             https://hub.docker.com/v2/users/login/)
           
-          # 提取 Token 并检查是否为空
           DOCKERHUB_AUTH_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.token')
           
           if [ "$DOCKERHUB_AUTH_TOKEN" = "null" ] || [ -z "$DOCKERHUB_AUTH_TOKEN" ]; then
@@ -33,6 +32,52 @@ jobs:
           fi
           
           echo "token=$DOCKERHUB_AUTH_TOKEN" >> $GITHUB_OUTPUT
+          # 输出用户名（方便核对）
+          echo "✅ 认证成功，用户名：${{ secrets.DOCKERHUB_USERNAME }}"
+
+      - name: 列出账号下所有仓库（关键验证步骤）
+        run: |
+          echo -e "\n📋 正在列出 ${{ secrets.DOCKERHUB_USERNAME }} 账号下所有仓库："
+          echo "----------------------------------------"
+          
+          # 调用 API 列出所有仓库（处理分页）
+          PAGE=1
+          PER_PAGE=100
+          ALL_REPOS=""
+          
+          while true; do
+            REPO_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/?page=${PAGE}&page_size=${PER_PAGE}")
+            
+            # 提取当前页仓库列表
+            CURRENT_REPOS=$(echo "$REPO_RESPONSE" | jq -r '.results[].full_name')
+            if [ -z "$CURRENT_REPOS" ] || [ "$CURRENT_REPOS" = "null" ]; then
+              break
+            fi
+            
+            # 输出当前页仓库
+            echo "$CURRENT_REPOS"
+            ALL_REPOS+="$CURRENT_REPOS"$'\n'
+            
+            # 检查下一页
+            NEXT_PAGE=$(echo "$REPO_RESPONSE" | jq -r '.next')
+            if [ "$NEXT_PAGE" = "null" ]; then
+              break
+            fi
+            PAGE=$((PAGE + 1))
+          done
+          
+          # 验证目标仓库是否存在
+          TARGET_REPO="${{ github.event.inputs.repo_name }}"
+          echo -e "\n----------------------------------------"
+          if echo "$ALL_REPOS" | grep -q "^$TARGET_REPO$"; then
+            echo "✅ 验证通过：目标仓库 $TARGET_REPO 存在！"
+          else
+            echo "❌ 验证失败：目标仓库 $TARGET_REPO 不存在！"
+            echo "🔍 账号下真实存在的仓库列表："
+            echo "$ALL_REPOS"
+            exit 1
+          fi
 
       - name: Delete Docker Hub repository
         run: |
@@ -40,10 +85,10 @@ jobs:
           NAMESPACE=$(echo "$REPO" | cut -d'/' -f1)
           REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
           
-          echo "⚠️ 即将删除 Docker Hub 仓库：$REPO"
+          echo -e "\n⚠️ 即将删除 Docker Hub 仓库：$REPO"
           echo "此操作不可逆！"
           
-          # 调用 API 删除仓库
+          # 执行删除
           RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null \
             -X DELETE \
             -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
@@ -52,9 +97,6 @@ jobs:
           
           if [ "$RESPONSE" = "204" ]; then
             echo "✅ 仓库 $REPO 删除成功！"
-          elif [ "$RESPONSE" = "404" ]; then
-            echo "❌ 仓库 $REPO 不存在，请检查名称是否正确"
-            exit 1
           elif [ "$RESPONSE" = "403" ]; then
             echo "❌ Token 没有 Delete 权限，请检查 Token 权限配置"
             exit 1
