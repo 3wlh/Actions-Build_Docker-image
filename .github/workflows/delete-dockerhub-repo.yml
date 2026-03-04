@@ -1,0 +1,62 @@
+name: Delete Docker Hub Repository
+
+# 触发方式：手动触发（推荐）
+on:
+  workflow_dispatch:
+    inputs:
+      repo_name:
+        description: '要删除的 Docker Hub 仓库名（格式：用户名/仓库名）'
+        required: true
+        default: 'your-username/your-repo'
+
+jobs:
+  delete-dockerhub-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Docker Hub auth token
+        id: get-token
+        run: |
+          # 1. 获取 Docker Hub 认证 Token
+          AUTH_RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"username":"${{ secrets.DOCKERHUB_USERNAME }}","password":"${{ secrets.DOCKERHUB_TOKEN }}"}' \
+            https://hub.docker.com/v2/users/login/)
+          
+          # 提取 Token
+          DOCKERHUB_AUTH_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.token')
+          
+          if [ "$DOCKERHUB_AUTH_TOKEN" = "null" ] || [ -z "$DOCKERHUB_AUTH_TOKEN" ]; then
+            echo "❌ 登录失败，请检查 Docker Hub 用户名和 Token"
+            echo "$AUTH_RESPONSE"
+            exit 1
+          fi
+          
+          echo "token=$DOCKERHUB_AUTH_TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Delete Docker Hub repository
+        run: |
+          REPO="${{ github.event.inputs.repo_name }}"
+          # 拆分命名空间和仓库名
+          NAMESPACE=$(echo "$REPO" | cut -d'/' -f1)
+          REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
+          
+          echo "⚠️ 即将删除 Docker Hub 仓库：$REPO"
+          echo "此操作不可逆！"
+          
+          # 2. 调用 Docker Hub API 删除仓库
+          RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null \
+            -X DELETE \
+            -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPO_NAME)
+          
+          if [ "$RESPONSE" = "204" ]; then
+            echo "✅ 仓库 $REPO 删除成功！"
+          else
+            echo "❌ 删除失败，HTTP 状态码：$RESPONSE"
+            echo "请检查：仓库是否存在、Token 是否有 Delete 权限"
+            exit 1
+          fi
