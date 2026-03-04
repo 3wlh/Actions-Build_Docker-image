@@ -51,7 +51,6 @@ jobs:
           # 输出所有仓库（清晰展示）
           if [ -z "$ALL_REPOS" ]; then
             echo "❌ 账号下无任何仓库！"
-            exit 1
           else
             echo "$ALL_REPOS"
           fi
