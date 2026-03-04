@@ -49,7 +49,7 @@ jobs:
           # 2. 调用 Docker Hub API 删除仓库
           RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null \
             -X DELETE \
-            -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
+            -H "Authorization: Bearer ${{ steps.DOCKERHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPO_NAME)
           
