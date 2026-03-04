@@ -6,7 +6,6 @@ on:
       repo_name:
         description: '要删除的 Docker Hub 仓库名（格式：用户名/仓库名）'
         required: true
-        # 可选：设置你最常删的仓库为默认值
         default: '3wlh/napcat_service'
 
 jobs:
@@ -19,6 +18,9 @@ jobs:
       - name: 获取 Docker Hub 认证 Token
         id: get-token
         run: |
+          # 初始化状态标记
+          echo "auth_success=false" >> $GITHUB_OUTPUT
+          
           # 登录并获取 Token
           AUTH_RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
@@ -27,17 +29,21 @@ jobs:
           
           # 提取并验证 Token
           DOCKERHUB_AUTH_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.token')
-          if [ "$DOCKERHUB_AUTH_TOKEN" = "null" ] || [ -z "$DOCKERHUB_AUTH_TOKEN" ]; then
+          if [ "$DOCKERHUB_AUTH_TOKEN" != "null" ] && [ -n "$DOCKERHUB_AUTH_TOKEN" ]; then
+            echo "token=$DOCKERHUB_AUTH_TOKEN" >> $GITHUB_OUTPUT
+            echo "auth_success=true" >> $GITHUB_OUTPUT
+            echo "✅ 认证成功！用户名：${{ secrets.DOCKERHUB_USERNAME }}"
+          else
             echo "❌ Docker Hub 登录失败！返回信息：$AUTH_RESPONSE"
-            exit 1
           fi
-          
-          echo "token=$DOCKERHUB_AUTH_TOKEN" >> $GITHUB_OUTPUT
-          echo "✅ 认证成功！用户名：${{ secrets.DOCKERHUB_USERNAME }}"
 
       - name: 列出所有仓库并验证目标仓库存在
         id: check-repo
+        if: steps.get-token.outputs.auth_success == 'true'
         run: |
+          # 初始化状态标记
+          echo "repo_exists=false" >> $GITHUB_OUTPUT
+          
           echo -e "\n📋 正在列出 ${{ secrets.DOCKERHUB_USERNAME }} 账号下所有仓库："
           echo "----------------------------------------"
           
@@ -48,7 +54,7 @@ jobs:
           # 拼接完整仓库名（namespace + name）
           ALL_REPOS=$(echo "$REPO_RESPONSE" | jq -r '.results[] | .namespace + "/" + .name')
           
-          # 输出所有仓库（清晰展示）
+          # 输出所有仓库
           if [ -z "$ALL_REPOS" ]; then
             echo "❌ 账号下无任何仓库！"
           else
@@ -61,6 +67,10 @@ jobs:
           if echo "$ALL_REPOS" | grep -q "^$TARGET_REPO$"; then
             echo "✅ 验证通过：目标仓库 $TARGET_REPO 存在！"
             echo "repo_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ 验证失败：目标仓库 $TARGET_REPO 不存在！"
+            echo "🔍 账号下真实存在的仓库："
+            echo "$ALL_REPOS"
           fi
 
       - name: 删除 Docker Hub 仓库（仅验证通过后执行）
@@ -80,16 +90,13 @@ jobs:
             -H "Content-Type: application/json" \
             https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPO_NAME)
           
-          # 结果反馈
+          # 结果反馈（无 exit 1，仅输出提示）
           if [ "$RESPONSE" = "204" ]; then
             echo "✅ 仓库 $REPO 删除成功！"
           elif [ "$RESPONSE" = "403" ]; then
             echo "❌ 删除失败：Token 缺少 Delete 权限！"
-            exit 1
           elif [ "$RESPONSE" = "404" ]; then
             echo "❌ 删除失败：仓库 $REPO 已被删除！"
-            exit 1
           else
             echo "❌ 删除失败，HTTP 状态码：$RESPONSE"
-            exit 1
           fi
