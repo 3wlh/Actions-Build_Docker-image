@@ -98,7 +98,7 @@ jobs:
       - name: 删除 Docker Hub 仓库
         if: steps.process-repo.outputs.target_repos != ''
         run: |
-          # 遍历所有要删除的仓库（无 exit）
+          # 遍历所有要删除的仓库
           for REPO in ${{ env.ALL_REPOS }}; do
             # 仅删除目标仓库（all则删除全部，单个则只删指定）
             if [ "${{ github.event.inputs.repo_name }}" = "all" ] || [ "$REPO" = "${{ steps.process-repo.outputs.target_repos }}" ]; then
