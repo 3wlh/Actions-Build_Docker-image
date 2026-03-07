@@ -8,9 +8,8 @@ on:
         required: true
         type: choice
         options:
-          - 3wlh/photopea
           - alpine
-          - alpine:3.18
+          - mlikiowa/napcat-docker
 
       platform:
         description: 选择要同步的目标架构
