@@ -105,6 +105,6 @@ jobs:
           name: Docker_${{ inputs.image }}
           files: /tmp/images/*
           body: |
-            ## 编译信息
+            ## 镜像信息
             - 编译时间：`${{ env.BUILD_TIME }}`
             - 架构：`${{ inputs.platform }}`
