@@ -27,6 +27,7 @@ on:
 
 env:
   TZ: Asia/Shanghai
+  DOCKER_REPO: docker.cnb.cool/3wlh/docker-repo
 
 jobs:
   build:
@@ -40,7 +41,7 @@ jobs:
 
       - name: docker login
         run: |
-          echo "${{ secrets.CNB_TOKEN }}" | docker login -u cnb --password-stdin docker.cnb.cool
+          docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
@@ -52,7 +53,7 @@ jobs:
 
       - name: Buildx and Docker image push
         env:
-          DOCKER_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.Name }}
+          DOCKER_TAG: ${{ env.DOCKER_REPO }}/${{ env.Name }}
         run: |
           # cd ${{ inputs.image }}
           # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
@@ -60,7 +61,7 @@ jobs:
             --output "type=image,push=true" \
             --platform ${{ inputs.platform }} \
             ${TAG} \
-            --tag ${DOCKER_REPO}:latest \
+            --tag ${DOCKER_TAG}:latest \
             --file ./Dockerfile \
             .
 
