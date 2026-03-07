@@ -25,7 +25,7 @@ on:
 
 jobs:
   docker-sync:
-    uses: ./.github/workflows/Actions_Docker-Sync-CNB
+    uses: ./.github/workflows/Actions_Docker-Sync-CNB.yml
     secrets: inherit
     with:
       image: ${{ inputs.image }}
