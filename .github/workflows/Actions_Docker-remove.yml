@@ -4,7 +4,6 @@ on:
   workflow_call:
     inputs:
       repo_name:
-        required: false
         type: string
 
 jobs:

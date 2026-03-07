@@ -13,7 +13,7 @@ on:
           - push
           - Release
           - Remove
-          
+
       image:
         description: 选择要编译的镜像模块
         required: false
@@ -35,17 +35,17 @@ on:
           - linux/amd64,linux/arm64
           - linux/amd64
           - linux/arm64
-    
+
       repo:
-          description: 选择镜像推送的目标仓库
-          required: true
-          default: "all"
-          type: choice
-          options:
-            - all
-            - docker-hub
-            - docker-cnb
-    
+        description: 选择镜像推送的目标仓库
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - docker-hub
+          - docker-cnb
+
 jobs:
   docker-push:
     if: ${{ inputs.method == 'push' }}
