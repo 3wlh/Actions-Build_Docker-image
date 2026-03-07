@@ -40,25 +40,25 @@ on:
           - linux/arm64
 
 jobs:
-  docker-method:
-    runs-on: ubuntu-latest
-    steps:
-      - name: docker-push
-        if: ${{ inputs.method == 'push' }}
-        uses: ./.github/workflows/Actions_Docker-push.yml
-        with:
-          image: ${{ inputs.image }}
-          platform: ${{ inputs.platform }}
+  docker-push:
+    if: ${{ inputs.method == 'push' }}
+    uses: ./.github/workflows/Actions_Docker-push.yml
+    secrets: inherit
+    with:
+      image: ${{ inputs.image }}
+      platform: ${{ inputs.platform }}
 
-      - name: docker-release
-        if: ${{ inputs.method == 'release' }}
-        uses: ./.github/workflows/Actions_Docker-release.yml
-        with:
-          image: ${{ inputs.image }}
-          platform: ${{ inputs.platform }}
+  docker-release:
+    if: ${{ inputs.method == 'release' }}
+    uses: ./.github/workflows/Actions_Docker-release.yml
+    secrets: inherit
+    with:
+      image: ${{ inputs.image }}
+      platform: ${{ inputs.platform }}
 
-      - name: docker-delete
-        if: ${{ inputs.method == 'delete' }}
-        uses: ./.github/workflows/Actions_Docker-delete.yml
-        with:
-          repo_name: ${{ inputs.image }}
+  docker-delete:
+    if: ${{ inputs.method == 'delete' }}
+    uses: ./.github/workflows/Actions_Docker-delete.yml
+    secrets: inherit
+    with:
+      repo_name: ${{ inputs.image }}
