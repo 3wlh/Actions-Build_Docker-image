@@ -102,9 +102,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: GitHub-Actions_${{ inputs.image }}
-          name: ${{ inputs.image }}
+          name: Docker_${{ inputs.image }}
           files: /tmp/images/*
           body: |
             ## 编译信息
             - 编译时间：`${{ env.BUILD_TIME }}`
-            - 名称：`${{ inputs.image }}`
+            - 架构：`${{ inputs.platform }}`
