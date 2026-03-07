@@ -141,7 +141,18 @@ jobs:
             echo "同步 amd64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$AMD64_DIGEST" ]; then
-              docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}
+              SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}"
+              
+              TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
+              if [ -n "$TARGET_MANIFEST" ]; then
+                echo "保留目标镜像已有的其他架构..."
+                EXISTING_DIGESTS=$(echo "$TARGET_MANIFEST" | jq -r '.manifests[] | select(.platform.architecture!="amd64" and .platform.os=="linux") | .digest')
+                for DIGEST in $EXISTING_DIGESTS; do
+                  SOURCES="${SOURCES} ${CNB_REPO}:${IMAGE_TAG}@${DIGEST}"
+                done
+              fi
+              
+              docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
             else
               echo "错误：未找到 amd64 架构"
               exit 1
@@ -150,7 +161,18 @@ jobs:
             echo "同步 arm64 架构"
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$ARM64_DIGEST" ]; then
-              docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}
+              SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}"
+              
+              TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
+              if [ -n "$TARGET_MANIFEST" ]; then
+                echo "保留目标镜像已有的其他架构..."
+                EXISTING_DIGESTS=$(echo "$TARGET_MANIFEST" | jq -r '.manifests[] | select(.platform.architecture!="arm64" and .platform.os=="linux") | .digest')
+                for DIGEST in $EXISTING_DIGESTS; do
+                  SOURCES="${SOURCES} ${CNB_REPO}:${IMAGE_TAG}@${DIGEST}"
+                done
+              fi
+              
+              docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
             else
               echo "错误：未找到 arm64 架构"
               exit 1
