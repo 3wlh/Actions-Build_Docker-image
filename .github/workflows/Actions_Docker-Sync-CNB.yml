@@ -1,28 +1,12 @@
-name: Sync Docker to CNB
+name: Call Docker Sync CNB
 
 on:
-  repository_dispatch:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       image:
-        description: 选择要同步的镜像
-        required: true
-        type: choice
-        options:
-          - 3wlh/photopea
-          - alpine
-          - alpine:3.18
-
+        type: string
       platform:
-        description: 选择要同步的目标架构
-        required: true
-        default: "all"
-        type: choice
-        options:
-          - all
-          - linux/amd64,linux/arm64
-          - linux/amd64
-          - linux/arm64
+        type: string
 
 env:
   TZ: Asia/Shanghai

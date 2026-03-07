@@ -1,4 +1,4 @@
-name: Actions Docker Push
+name: Call Docker Push
 
 on:
   workflow_call:

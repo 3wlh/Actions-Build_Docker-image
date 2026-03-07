@@ -1,4 +1,4 @@
-name: Actions Docker Release
+name: Call Docker Release
 on:
   workflow_call:
     inputs:
