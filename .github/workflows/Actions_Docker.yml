@@ -10,9 +10,9 @@ on:
         default: "release"
         type: choice
         options:
-          - push
-          - release
-          - delete
+          - Push
+          - Release
+          - Remove
           
       image:
         description: 选择要编译的镜像模块
@@ -48,7 +48,7 @@ on:
     
 jobs:
   docker-push:
-    if: ${{ inputs.method == 'push' }}
+    if: ${{ inputs.method == 'Push' }}
     uses: ./.github/workflows/Actions_Docker-push.yml
     secrets: inherit
     with:
@@ -57,7 +57,7 @@ jobs:
       repo: ${{ inputs.repo }}
 
   docker-release:
-    if: ${{ inputs.method == 'release' }}
+    if: ${{ inputs.method == 'Release' }}
     uses: ./.github/workflows/Actions_Docker-release.yml
     secrets: inherit
     with:
@@ -65,7 +65,7 @@ jobs:
       platform: ${{ inputs.platform }}
 
   docker-delete:
-    if: ${{ inputs.method == 'delete' }}
+    if: ${{ inputs.method == 'Remove' }}
     uses: ./.github/workflows/Actions_Docker-remove.yml
     secrets: inherit
     with:
