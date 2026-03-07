@@ -15,7 +15,7 @@ env:
   UPLOAD_BIN_DIR: true
 
 jobs:
-  jobs_Build:
+  build:
     name: Build for ${{ matrix.platform }}
     runs-on: ubuntu-latest
     strategy:
@@ -43,7 +43,6 @@ jobs:
           DOCKER_REPO: 3wlh/${{ env.name }}
         run: |
           cd ${{ inputs.image }}
-          # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
           docker buildx build \
             --output "type=image" \
             --platform ${{ matrix.platform }} \
@@ -69,9 +68,9 @@ jobs:
           name: ${{ env.name }}-${{ env.platform }}
           path: /tmp/images
 
-  jod_Release:
+  upload-release:
     name: Upload Release
-    needs: jobs_Build
+    needs: build
     runs-on: ubuntu-latest
     env:
       image_path: "/tmp/images"

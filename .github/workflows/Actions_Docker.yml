@@ -5,8 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       method:
-        description: |
-          选择编译方式?
+        description: 选择要执行的操作类型
         required: true
         default: "release"
         type: choice
@@ -14,10 +13,9 @@ on:
           - push
           - release
           - delete
-
+          
       image:
-        description: |
-          选择编译镜像文件
+        description: 选择要编译的镜像模块
         required: false
         default: "all"
         type: choice
@@ -29,8 +27,7 @@ on:
           - Photopea
 
       platform:
-        description: |
-          选择 编译 架构
+        description: 选择要编译的目标架构
         required: true
         default: "linux/amd64,linux/arm64"
         type: choice
@@ -38,7 +35,17 @@ on:
           - linux/amd64,linux/arm64
           - linux/amd64
           - linux/arm64
-
+    
+      repo:
+          description: 选择镜像推送的目标仓库
+          required: true
+          default: "all"
+          type: choice
+          options:
+            - all
+            - docker-hub
+            - docker-cnb
+    
 jobs:
   docker-push:
     if: ${{ inputs.method == 'push' }}
@@ -47,6 +54,7 @@ jobs:
     with:
       image: ${{ inputs.image }}
       platform: ${{ inputs.platform }}
+      repo: ${{ inputs.repo }}
 
   docker-release:
     if: ${{ inputs.method == 'release' }}

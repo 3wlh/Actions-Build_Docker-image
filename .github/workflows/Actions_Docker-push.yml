@@ -1,17 +1,20 @@
 name: Build Docker Push
 
 on:
-  workflow_call:     
+  workflow_call:
     inputs:
       platform:
         required: false
         type: string
-        
+
       image:
         required: false
         type: string
-        
-          
+
+      repo:
+        required: false
+        type: string
+
 env:
   TZ: Asia/Shanghai
 
@@ -21,38 +24,50 @@ jobs:
     defaults:
       run:
         working-directory: ./${{ inputs.image }}
-    steps:       
+    steps:
       - name: Check out code
-        uses: actions/checkout@v4    
-        
+        uses: actions/checkout@v4
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
-        
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
           echo "name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
-      
-      - name: Buildx and Docker image push
+
+      - name: Login to Docker Hub
+        if: ${{ inputs.repo == 'docker-hub' || inputs.repo == 'all' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to CNB
+        if: ${{ inputs.repo == 'docker-cnb' || inputs.repo == 'all' }}
+        run: |
+          docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
+
+      - name: Buildx and Docker image push to Docker Hub
+        if: ${{ inputs.repo == 'docker-hub' || inputs.repo == 'all' }}
         env:
           DOCKER_REPO: 3wlh/${{ env.name }}
         run: |
-          # cd ${{ inputs.image }}
-          # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
           docker buildx build \
             --output "type=image,push=true" \
             --platform ${{ inputs.platform }} \
-            ${TAG} \
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
             .
-            
-      - name: Docker Hub logout
-        if: always()
-        run: docker logout          
+
+      - name: Buildx and Docker image push to CNB
+        if: ${{ inputs.repo == 'docker-cnb' || inputs.repo == 'all' }}
+        env:
+          DOCKER_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
+        run: |
+          docker buildx build \
+            --output "type=image,push=true" \
+            --platform ${{ inputs.platform }} \
+            --tag ${DOCKER_REPO}:latest \
+            --file ./Dockerfile \
+            .
