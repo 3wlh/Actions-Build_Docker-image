@@ -43,7 +43,7 @@ jobs:
         id: check
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
-          DOCKERHUB_REPO: ${{ env.image_name }}
+          DOCKERHUB_REPO: ${{ inputs.image }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
           echo "✅ 检查镜像是否需要同步..."
@@ -95,7 +95,7 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
-          DOCKERHUB_REPO: ${{ env.image_name }}
+          DOCKERHUB_REPO: ${{ inputs.image }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
           echo "✅ 开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
