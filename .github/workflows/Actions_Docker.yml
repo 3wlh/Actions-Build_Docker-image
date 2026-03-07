@@ -10,7 +10,7 @@ on:
         default: "release"
         type: choice
         options:
-          - Push
+          - push
           - Release
           - Remove
           
@@ -48,7 +48,7 @@ on:
     
 jobs:
   docker-push:
-    if: ${{ inputs.method == 'Push' }}
+    if: ${{ inputs.method == 'push' }}
     uses: ./.github/workflows/Actions_Docker-push.yml
     secrets: inherit
     with:
