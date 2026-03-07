@@ -12,8 +12,8 @@ env:
   TZ: Asia/Shanghai
 
 jobs:
-  if: false
-  sync:
+  jobs_sync:
+    if: false
     name: Sync to CNB
     runs-on: ubuntu-latest
     steps:
