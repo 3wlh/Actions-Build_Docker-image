@@ -1,4 +1,4 @@
-name: Delete Docker Hub Repository
+name: Actions Docker Remove Hub Repository
 
 on:
   workflow_call:
