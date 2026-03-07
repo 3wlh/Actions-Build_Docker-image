@@ -1,0 +1,71 @@
+name: Sync Docker to CNB
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 选择要同步的镜像
+        required: true
+        type: choice
+        options:
+          - 3wlh/photopea
+          - alpine
+
+      platform:
+        description: 选择要同步的目标架构
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - linux/amd64
+          - linux/arm64
+
+env:
+  TZ: Asia/Shanghai
+  DOCKERHUB_REPO: ${{ inputs.image }}
+  CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
+
+jobs:
+  sync:
+    name: Sync to CNB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Handle Variables
+        run: |
+          echo "name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to CNB
+        run: |
+          docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
+
+      - name: Pull and Sync images
+        env:
+        run: |
+          if [ "${{ inputs.platform }}" = "all" ]; then
+            echo "同步 amd64 和 arm64 架构"
+            docker pull ${DOCKERHUB_REPO}:latest
+            docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest
+            docker push ${CNB_REPO}:latest
+          elif [ "${{ inputs.platform }}" = "linux/amd64" ]; then
+            echo "同步 amd64 架构"
+            docker pull --platform linux/amd64 ${DOCKERHUB_REPO}:latest
+            docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest
+            docker push ${CNB_REPO}:latest
+          else
+            echo "同步 arm64 架构"
+            docker pull --platform linux/arm64 ${DOCKERHUB_REPO}:latest
+            docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest
+            docker push ${CNB_REPO}:latest
+          fi
+
+      - name: Docker Hub logout
+        if: always()
+        run: docker logout
