@@ -1,0 +1,67 @@
+name: Actions Docker
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      method:
+        description: |
+          选择编译方式?
+        required: true
+        default: "release"
+        type: choice
+        options:
+          - push
+          - release
+          - delete
+      
+      image:
+        description: |
+          选择编译镜像文件
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - NapCat_api
+          - NapCat_Service
+          - PaddleOCR
+          - Photopea
+      
+      platform:
+        description: |
+          选择 编译 架构
+        required: true
+        default: "linux/amd64,linux/arm64"
+        type: choice
+        options:
+          - linux/amd64,linux/arm64
+          - linux/amd64
+          - linux/arm64
+       
+jobs:
+  docker-method:
+    runs-on: ubuntu-latest
+    steps:
+      -name: docker-push
+        if: ${{ inputs.method == 'push' }}
+        uses: ./.github/workflows/Build_Docker-push.yml
+        secrets: inherit
+        with:
+          image: ${{ inputs.image }}
+          platform: ${{ inputs.platform }}
+      
+      -name: docker-release
+        if: ${{ inputs.method == 'release' }}
+        uses: ./.github/workflows/Build_Docker-release.yml
+        secrets: inherit
+        with:
+          image: ${{ inputs.image }}
+          platform: ${{ inputs.platform }}
+       
+      -name: docker-delete:
+        if: ${{ inputs.method == 'delete' }}
+        uses: ./.github/workflows/Docker-delete.yml
+        secrets: inherit
+        with:
+          repo_name: ${{ inputs.image }}

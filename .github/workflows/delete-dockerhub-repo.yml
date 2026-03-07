@@ -4,16 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       repo_name:
-        description: '要删除的 Docker Hub 仓库名'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - NapCat_api
-          - NapCat_Service
-          - PaddleOCR
-          - Photopea
+        required: false
+        type: string
 
 jobs:
   delete-dockerhub-repo:
