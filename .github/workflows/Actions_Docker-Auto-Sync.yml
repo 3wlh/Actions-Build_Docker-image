@@ -1,0 +1,13 @@
+name: Actions Docker Auto Sync CNB
+
+on: 
+  schedule:
+    - cron: '0 0 */2 * *'  # 每2天一次
+
+jobs:
+  sync_napcat:
+    uses: ./.github/workflows/Call_Docker-Sync-CNB.yml
+    secrets: inherit
+    with:
+      image: "mlikiowa/napcat-docker"
+      platform: "linux/amd64,linux/arm64"
