@@ -25,7 +25,6 @@ on:
 env:
   TZ: Asia/Shanghai
   DOCKERHUB_REPO: ${{ inputs.image }}
-  CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
 
 jobs:
   sync:
@@ -34,7 +33,7 @@ jobs:
     steps:
       - name: Handle Variables
         run: |
-          echo "name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
+          echo "name=$(basename ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -47,6 +46,8 @@ jobs:
           docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
 
       - name: Pull and Sync images
+        env:
+          CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
         run: |
           if [ "${{ inputs.platform }}" = "all" ]; then
             echo "同步 amd64 和 arm64 架构"
