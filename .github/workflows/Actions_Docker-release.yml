@@ -18,6 +18,9 @@ jobs:
   build:
     name: Build for ${{ matrix.platform }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./${{ inputs.image }}
     strategy:
       fail-fast: false
       matrix:
@@ -42,7 +45,6 @@ jobs:
         env:
           DOCKER_REPO: 3wlh/${{ env.name }}
         run: |
-          cd ${{ inputs.image }}
           docker buildx build \
             --output "type=image" \
             --platform ${{ matrix.platform }} \
