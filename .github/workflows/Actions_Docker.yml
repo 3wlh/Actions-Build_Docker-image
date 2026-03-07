@@ -41,7 +41,7 @@ on:
        
 jobs:
   docker-method:
-    runs-on:
+    runs-on: self-hosted
     steps:
       - name: docker-push
         if: ${{ inputs.method == 'push' }}
