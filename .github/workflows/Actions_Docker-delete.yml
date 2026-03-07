@@ -1,7 +1,7 @@
 name: Delete Docker Hub Repository
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       repo_name:
         required: false
@@ -19,13 +19,13 @@ jobs:
         run: |
           # 初始化状态标记
           echo "auth_success=false" >> $GITHUB_OUTPUT
-          
+
           # 登录并获取 Token
           AUTH_RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -d "{\"username\":\"${{ secrets.DOCKERHUB_USERNAME }}\",\"password\":\"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
             https://hub.docker.com/v2/users/login/)
-          
+
           # 提取并验证 Token（无 exit，仅更新状态标记）
           DOCKERHUB_AUTH_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.token')
           if [ "$DOCKERHUB_AUTH_TOKEN" != "null" ] && [ -n "$DOCKERHUB_AUTH_TOKEN" ]; then
@@ -42,15 +42,15 @@ jobs:
         run: |
           # 初始化输出标记
           echo "target_repos=" >> $GITHUB_OUTPUT
-          
+
           # 调用 API 获取仓库列表
           REPO_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ steps.get-token.outputs.token }}" \
             "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/")
-          
+
           # 拼接完整仓库名（namespace + name）
           ALL_REPOS=$(echo "$REPO_RESPONSE" | jq -r '.results[] | .namespace + "/" + .name')
           echo "ALL_REPOS=$ALL_REPOS" >> $GITHUB_ENV
-          
+
           # 输出所有仓库（无 exit，仅提示）
           echo -e "\n📋 账号下所有仓库："
           echo "----------------------------------------"
@@ -59,12 +59,12 @@ jobs:
           else
             echo "$ALL_REPOS"
           fi
-          
+
           # 处理下拉选择的仓库名：自动拼接+转小写（无 exit）
           SELECTED_REPO="${{ github.event.inputs.repo_name }}"
           USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
           TARGET_REPOS=""
-          
+
           if [ "$SELECTED_REPO" = "all" ] && [ -n "$ALL_REPOS" ]; then
             # 选择all且有仓库：删除所有仓库
             echo -e "\n✅ 选择删除所有仓库"
@@ -83,7 +83,7 @@ jobs:
               echo "❌ 仓库 $FULL_REPO 不存在！"
             fi
           fi
-          
+
           # 输出目标仓库列表（供后续删除步骤使用）
           echo "target_repos=$TARGET_REPOS" >> $GITHUB_OUTPUT
 
