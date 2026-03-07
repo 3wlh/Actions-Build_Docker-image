@@ -2,7 +2,7 @@ name: Build and Image Push CNB
 
 on:
   repository_dispatch:
-  workflow_dispatch:      
+  workflow_dispatch:
     inputs:
       platform:
         description: "Select the platform"
@@ -13,7 +13,7 @@ on:
           - linux/amd64,linux/arm64
           - linux/amd64
           - linux/arm64
-          
+
       image:
         description: "Select the Image"
         required: false
@@ -23,7 +23,7 @@ on:
           - all
           - NapCat_api
           - PaddleOCR
-          
+
 env:
   TZ: Asia/Shanghai
 
@@ -33,25 +33,25 @@ jobs:
     defaults:
       run:
         working-directory: ./${{ inputs.image }}
-    steps:       
+    steps:
       - name: Check out code
-        uses: actions/checkout@v4    
+        uses: actions/checkout@v4
 
       - name: docker login
         run: |
           docker login -u ${{ secrets.CNB_USERNAME }} -p "${{ secrets.CNB_TOKEN }}" docker.cnb.cool
-        
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
           echo "Name=$(echo ${{ inputs.image }} | tr 'A-Z' 'a-z')" >> $GITHUB_ENV
-      
+
       - name: Buildx and Docker image push
         env:
-          DOCKER_REPO: 3wlh/${{ env.Name }}
+          DOCKER_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.Name }}
         run: |
           # cd ${{ inputs.image }}
           # TAG="--tag ${DOCKER_REPO}:$(date "+%Y.%m.%d_%H%M%S")"
@@ -62,7 +62,7 @@ jobs:
             --tag ${DOCKER_REPO}:latest \
             --file ./Dockerfile \
             .
-            
+
       - name: Docker Hub logout
         if: always()
-        run: docker logout          
+        run: docker logout
