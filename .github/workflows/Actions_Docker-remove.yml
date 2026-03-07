@@ -1,4 +1,4 @@
-name: Actions Docker Remove Hub Repository
+name: Actions Docker Remove
 
 on:
   workflow_call:
