@@ -56,7 +56,7 @@ jobs:
           if [ "${{ inputs.platform }}" = "all" ]; then
             echo "查询镜像支持的架构"
             MANIFEST=$(docker manifest inspect ${DOCKERHUB_REPO}:latest 2>/dev/null || echo "{}")
-            ARCHS=$(echo "$MANIFEST" | grep -o '"architecture":"[^"]*"' | grep -o ':[^:]*"$' | tr -d ':"' | sort -u)
+            ARCHS=$(echo "$MANIFEST" | jq -r '.manifests[] | select(.platform.os=="linux") | .platform.architecture' | sort -u)
             echo "支持的架构：$ARCHS"
             
             for arch in $ARCHS; do
