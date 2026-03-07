@@ -1,4 +1,4 @@
-name: Actions Docker Sync CNB
+name: Actions Docker Manual Sync CNB
 
 on:
   workflow_dispatch:
