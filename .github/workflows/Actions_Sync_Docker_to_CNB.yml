@@ -56,7 +56,39 @@ jobs:
         run: |
           docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
 
+      - name: Check if sync needed
+        id: check
+        env:
+          CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
+          DOCKERHUB_REPO: ${{ env.image_name }}
+          IMAGE_TAG: ${{ env.image_tag }}
+        run: |
+          echo "检查镜像是否需要同步..."
+
+          SOURCE_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw 2>/dev/null | jq -r '.manifests[0].digest // .manifests[0].config.digest // empty' | head -1)
+          if [ -z "$SOURCE_DIGEST" ]; then
+            SOURCE_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw 2>/dev/null | sha256sum | cut -d' ' -f1)
+            SOURCE_DIGEST="sha256:$SOURCE_DIGEST"
+          fi
+          echo "源镜像 digest: ${SOURCE_DIGEST}"
+
+          TARGET_DIGEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null | jq -r '.manifests[0].digest // .manifests[0].config.digest // empty' | head -1)
+          if [ -z "$TARGET_DIGEST" ]; then
+            TARGET_DIGEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null | sha256sum | cut -d' ' -f1)
+            [ -n "$TARGET_DIGEST" ] && TARGET_DIGEST="sha256:$TARGET_DIGEST"
+          fi
+          echo "目标镜像 digest: ${TARGET_DIGEST:-不存在}"
+
+          if [ "$SOURCE_DIGEST" = "$TARGET_DIGEST" ]; then
+            echo "镜像已存在且相同，跳过同步"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "需要同步镜像"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Pull and Sync images
+        if: steps.check.outputs.skip != 'true'
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
           DOCKERHUB_REPO: ${{ env.image_name }}
