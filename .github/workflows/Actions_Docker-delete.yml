@@ -61,7 +61,7 @@ jobs:
           fi
 
           # 处理下拉选择的仓库名：自动拼接+转小写（无 exit）
-          SELECTED_REPO="${{ github.event.inputs.repo_name }}"
+          SELECTED_REPO="${{ inputs.repo_name }}"
           USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
           TARGET_REPOS=""
 
@@ -93,7 +93,7 @@ jobs:
           # 遍历所有要删除的仓库
           for REPO in ${{ env.ALL_REPOS }}; do
             # 仅删除目标仓库（all则删除全部，单个则只删指定）
-            if [ "${{ github.event.inputs.repo_name }}" = "all" ] || [ "$REPO" = "${{ steps.process-repo.outputs.target_repos }}" ]; then
+            if [ "${{ inputs.repo_name }}" = "all" ] || [ "$REPO" = "${{ steps.process-repo.outputs.target_repos }}" ]; then
               NAMESPACE=$(echo "$REPO" | cut -d'/' -f1)
               REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
               
