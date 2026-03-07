@@ -63,7 +63,7 @@ jobs:
           DOCKERHUB_REPO: ${{ env.image_name }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
-          echo "检查镜像是否需要同步..."
+          echo "✅ 检查镜像是否需要同步..."
 
           SOURCE_MANIFEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
           TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
