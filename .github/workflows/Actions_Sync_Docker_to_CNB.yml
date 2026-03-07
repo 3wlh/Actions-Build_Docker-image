@@ -47,7 +47,6 @@ jobs:
           docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
 
       - name: Pull and Sync images
-        env:
         run: |
           if [ "${{ inputs.platform }}" = "all" ]; then
             echo "同步 amd64 和 arm64 架构"
