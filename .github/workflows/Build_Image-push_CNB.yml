@@ -23,6 +23,7 @@ on:
           - all
           - NapCat_api
           - PaddleOCR
+          - Photopea
 
 env:
   TZ: Asia/Shanghai
