@@ -13,8 +13,6 @@ env:
 
 jobs:
   jobs_sync:
-    if: false
-    name: Sync to CNB
     runs-on: ubuntu-latest
     steps:
       - name: Handle Variables
