@@ -71,11 +71,11 @@ jobs:
           NEED_SYNC=false
 
           if [ "${{ inputs.platform }}" = "all" ]; then
-            echo "检查所有架构..."
+            echo "✅ 检查所有架构..."
             SOURCE_DIGEST=$(echo "$SOURCE_MANIFEST" | sha256sum | cut -d' ' -f1)
             TARGET_DIGEST=$(echo "$TARGET_MANIFEST" | sha256sum | cut -d' ' -f1)
-            echo "源 manifest hash: ${SOURCE_DIGEST}"
-            echo "目标 manifest hash: ${TARGET_DIGEST:-不存在}"
+            echo "✅ 源 manifest hash: ${SOURCE_DIGEST}"
+            echo "✅ 目标 manifest hash: ${TARGET_DIGEST:-不存在}"
             
             if [ "$SOURCE_DIGEST" != "$TARGET_DIGEST" ]; then
               NEED_SYNC=true
@@ -83,28 +83,28 @@ jobs:
           else
             for ARCH in $(echo "${{ inputs.platform }}" | tr ',' ' '); do
               ARCH_NAME=$(echo $ARCH | cut -d'/' -f2)
-              echo "检查架构: $ARCH_NAME"
+              echo "✅ 检查架构: $ARCH_NAME"
               
               SOURCE_ARCH_DIGEST=$(echo "$SOURCE_MANIFEST" | jq -r --arg arch "$ARCH_NAME" '.manifests[] | select(.platform.architecture==$arch and .platform.os=="linux") | .digest' | head -1)
               TARGET_ARCH_DIGEST=$(echo "$TARGET_MANIFEST" | jq -r --arg arch "$ARCH_NAME" '.manifests[] | select(.platform.architecture==$arch and .platform.os=="linux") | .digest' | head -1)
               
-              echo "源 $ARCH_NAME digest: ${SOURCE_ARCH_DIGEST:-不存在}"
-              echo "目标 $ARCH_NAME digest: ${TARGET_ARCH_DIGEST:-不存在}"
+              echo "❌ 源 $ARCH_NAME digest: ${SOURCE_ARCH_DIGEST:-不存在}"
+              echo "⚠️ 目标 $ARCH_NAME digest: ${TARGET_ARCH_DIGEST:-不存在}"
               
               if [ -z "$SOURCE_ARCH_DIGEST" ]; then
-                echo "警告：源镜像不存在 $ARCH_NAME 架构"
+                echo "⚠️ 警告：源镜像不存在 $ARCH_NAME 架构"
               elif [ "$SOURCE_ARCH_DIGEST" != "$TARGET_ARCH_DIGEST" ]; then
                 NEED_SYNC=true
-                echo "架构 $ARCH_NAME 需要同步"
+                echo "✅ 架构 $ARCH_NAME 需要同步"
               fi
             done
           fi
 
           if [ "$NEED_SYNC" = true ]; then
-            echo "需要同步镜像"
+            echo "✅ 需要同步镜像"
             echo "skip=false" >> $GITHUB_OUTPUT
           else
-            echo "镜像已存在且相同，跳过同步"
+            echo "✅ 镜像已存在且相同，跳过同步"
             echo "skip=true" >> $GITHUB_OUTPUT
           fi
 
@@ -115,15 +115,15 @@ jobs:
           DOCKERHUB_REPO: ${{ env.image_name }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
-          echo "开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
-          echo "目标仓库：${CNB_REPO}:${IMAGE_TAG}"
-          echo "目标架构：${{ inputs.platform }}"
+          echo "✅ 开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
+          echo "✅ 目标仓库：${CNB_REPO}:${IMAGE_TAG}"
+          echo "✅ 目标架构：${{ inputs.platform }}"
 
           if [ "${{ inputs.platform }}" = "all" ]; then
             echo "同步所有架构"
             docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}
           elif [ "${{ inputs.platform }}" = "linux/amd64,linux/arm64" ]; then
-            echo "同步 amd64 和 arm64 架构"
+            echo "✅ 同步 amd64 和 arm64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             
@@ -134,18 +134,17 @@ jobs:
             if [ -n "$SOURCES" ]; then
               docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
             else
-              echo "错误：未找到 amd64 或 arm64 架构"
+              echo "❌ 错误：未找到 amd64 或 arm64 架构"
               exit 1
             fi
           elif [ "${{ inputs.platform }}" = "linux/amd64" ]; then
-            echo "同步 amd64 架构"
+            echo "✅ 同步 amd64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$AMD64_DIGEST" ]; then
               SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}"
               
               TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
               if [ -n "$TARGET_MANIFEST" ]; then
-                echo "保留目标镜像已有的其他架构..."
                 EXISTING_DIGESTS=$(echo "$TARGET_MANIFEST" | jq -r '.manifests[] | select(.platform.architecture!="amd64" and .platform.os=="linux") | .digest')
                 for DIGEST in $EXISTING_DIGESTS; do
                   SOURCES="${SOURCES} ${CNB_REPO}:${IMAGE_TAG}@${DIGEST}"
@@ -154,18 +153,17 @@ jobs:
               
               docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
             else
-              echo "错误：未找到 amd64 架构"
+              echo "❌ 错误：未找到 amd64 架构"
               exit 1
             fi
           else
-            echo "同步 arm64 架构"
+            echo "✅ 同步 arm64 架构"
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$ARM64_DIGEST" ]; then
               SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}"
               
               TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
               if [ -n "$TARGET_MANIFEST" ]; then
-                echo "保留目标镜像已有的其他架构..."
                 EXISTING_DIGESTS=$(echo "$TARGET_MANIFEST" | jq -r '.manifests[] | select(.platform.architecture!="arm64" and .platform.os=="linux") | .digest')
                 for DIGEST in $EXISTING_DIGESTS; do
                   SOURCES="${SOURCES} ${CNB_REPO}:${IMAGE_TAG}@${DIGEST}"
@@ -174,12 +172,12 @@ jobs:
               
               docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
             else
-              echo "错误：未找到 arm64 架构"
+              echo "❌ 错误：未找到 arm64 架构"
               exit 1
             fi
           fi
 
-          echo "同步完成：${{ inputs.image }}"
+          echo "✅ 同步完成：${{ inputs.image }}"
 
       - name: Docker Hub logout
         if: always()
