@@ -54,23 +54,8 @@ jobs:
           echo "目标架构：${{ inputs.platform }}"
 
           if [ "${{ inputs.platform }}" = "all" ]; then
-            echo "查询镜像支持的架构"
-            MANIFEST=$(docker manifest inspect ${DOCKERHUB_REPO}:latest 2>/dev/null || echo "{}")
-            ARCHS=$(echo "$MANIFEST" | jq -r '.manifests[] | select(.platform.os=="linux") | .platform.architecture' | sort -u)
-            echo "支持的架构：$ARCHS"
-            
-            MANIFEST_IMAGES=""
-            for arch in $ARCHS; do
-              echo "同步 $arch 架构"
-              docker pull --platform linux/$arch ${DOCKERHUB_REPO}:latest
-              docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest-$arch
-              docker push ${CNB_REPO}:latest-$arch
-              MANIFEST_IMAGES="${MANIFEST_IMAGES} ${CNB_REPO}:latest-$arch"
-            done
-            
-            echo "创建多架构 manifest 清单"
-            docker manifest create ${CNB_REPO}:latest $MANIFEST_IMAGES
-            docker manifest push ${CNB_REPO}:latest
+            echo "同步所有架构"
+            docker buildx imagetools create --tag ${CNB_REPO}:latest ${DOCKERHUB_REPO}:latest
           elif [ "${{ inputs.platform }}" = "linux/amd64" ]; then
             echo "同步 amd64 架构"
             docker pull --platform linux/amd64 ${DOCKERHUB_REPO}:latest
