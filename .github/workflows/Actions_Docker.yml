@@ -59,7 +59,7 @@ jobs:
           image: ${{ inputs.image }}
           platform: ${{ inputs.platform }}
        
-      - name: docker-delete:
+      - name: docker-delete
         if: ${{ inputs.method == 'delete' }}
         uses: ./.github/workflows/Docker-delete.yml
         secrets: inherit
