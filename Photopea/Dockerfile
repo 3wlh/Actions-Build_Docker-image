@@ -7,7 +7,7 @@ RUN apk update && apk upgrade
 RUN apk add git
 
 ENV \
-	DOWNLOAD_URL="https://github.com/3wlh/Actions-Build_Docker-image/releases/download/Files-Photopea" \
+	DOWNLOAD_URL="https://github.com/3wlh/Actions-Docker/releases/download/Files-Photopea" \
 	GIT_URL="https://gitflic.ru/project/photopea-v2/photopea-v-2.git"
 
 #RUN git clone --progress --verbose ${GIT_URL) . && \
