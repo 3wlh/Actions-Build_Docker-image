@@ -41,7 +41,7 @@ on:
        
 jobs:
   docker-method:
-    runs-on: ubuntu-latest
+    runs-on:
     steps:
       - name: docker-push
         if: ${{ inputs.method == 'push' }}
