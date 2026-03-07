@@ -62,7 +62,6 @@ jobs:
 
       - name: Upload Directory
         uses: actions/upload-artifact@main
-        if: ${{ env.UPLOAD_BIN_DIR == 'true' }}
         with:
           name: ${{ env.name }}-${{ env.platform }}
           path: /tmp/images
@@ -74,10 +73,18 @@ jobs:
     env:
       image_path: "/tmp/images"
     steps:
+      - name: Delete GitHub Release
+        uses: dev-drprasad/delete-tag-and-release@master
+        with:
+          tag_name: GitHub-Actions_${{ inputs.image }}
+          delete_release: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: Initial
         run: |
           sudo timedatectl set-timezone "${TZ}"
-          echo "time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_ENV
           test -d "${{ env.image_path }}" || mkdir -p "${{ env.image_path }}"
 
       - name: Download Directory
@@ -94,5 +101,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.time }}
+          tag_name: GitHub-Actions_${{ inputs.image }}
+          name: ${{ inputs.image }}
           files: /tmp/images/*
+          body: |
+            ## 编译信息
+            - 编译时间：`${{ env.BUILD_TIME }}`
+            - 插件：`${{ ${{ inputs.image }} }}`
