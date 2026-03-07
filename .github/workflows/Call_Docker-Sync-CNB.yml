@@ -48,8 +48,11 @@ jobs:
         run: |
           echo "✅ 检查镜像是否需要同步..."
 
-          SOURCE_MANIFEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
-          TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
+          SOURCE_MANIFEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw 2>&1) || {
+            echo "❌ 获取源镜像 manifest 失败"
+            exit 1
+          }
+          TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>&1) || true
 
           NEED_SYNC=false
 
