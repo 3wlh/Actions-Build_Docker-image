@@ -49,11 +49,22 @@ jobs:
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
         run: |
+          echo "开始同步镜像：${DOCKERHUB_REPO}:latest"
+          echo "目标仓库：${CNB_REPO}:latest"
+          echo "目标架构：${{ inputs.platform }}"
+
           if [ "${{ inputs.platform }}" = "all" ]; then
-            echo "同步 amd64 和 arm64 架构"
-            docker pull ${DOCKERHUB_REPO}:latest
-            docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest
-            docker push ${CNB_REPO}:latest
+            echo "查询镜像支持的架构"
+            MANIFEST=$(docker manifest inspect ${DOCKERHUB_REPO}:latest 2>/dev/null || echo "{}")
+            ARCHS=$(echo "$MANIFEST" | grep -o '"architecture":"[^"]*"' | grep -o ':[^:]*"$' | tr -d ':"' | sort -u)
+            echo "支持的架构：$ARCHS"
+            
+            for arch in $ARCHS; do
+              echo "同步 $arch 架构"
+              docker pull --platform linux/$arch ${DOCKERHUB_REPO}:latest
+              docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest
+              docker push ${CNB_REPO}:latest
+            done
           elif [ "${{ inputs.platform }}" = "linux/amd64" ]; then
             echo "同步 amd64 架构"
             docker pull --platform linux/amd64 ${DOCKERHUB_REPO}:latest
@@ -65,6 +76,8 @@ jobs:
             docker tag ${DOCKERHUB_REPO}:latest ${CNB_REPO}:latest
             docker push ${CNB_REPO}:latest
           fi
+
+          echo "同步完成：${{ inputs.image }}"
 
       - name: Docker Hub logout
         if: always()
