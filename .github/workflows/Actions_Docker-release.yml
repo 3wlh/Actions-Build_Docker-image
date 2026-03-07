@@ -107,4 +107,4 @@ jobs:
           body: |
             ## 编译信息
             - 编译时间：`${{ env.BUILD_TIME }}`
-            - 插件：`${{ ${{ inputs.image }} }}`
+            - 名称：`${{ inputs.image }}`
