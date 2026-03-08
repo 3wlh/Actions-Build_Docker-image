@@ -25,6 +25,7 @@ on:
           - NapCat_Service
           - PaddleOCR
           - Photopea
+          - Skopeo
 
       platform:
         description: 选择要编译的目标架构
