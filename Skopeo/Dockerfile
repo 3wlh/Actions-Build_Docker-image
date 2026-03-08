@@ -1,7 +1,8 @@
 FROM ubuntu
 
 RUN apt update && \
-    apt install -y --no-install-recommends jq wget && \
+    apt install -y --no-install-recommends \
+    jq wget ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 ENV ARCH=amd64 \
