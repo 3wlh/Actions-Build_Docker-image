@@ -6,9 +6,9 @@ RUN apt update && \
 
 ENV ARCH=amd64 \
     VERSION=v1.22.0 \
-    DOWNLOAD_URL=https://github.com/lework/skopeo-binary/releases/download/${VERSION}/skopeo-linux-${ARCH}
-
-RUN wget -O /usr/bin/skopeo ${DOWNLOAD_URL} && \
+    BASE_URL=https://github.com/lework/skopeo-binary/releases/download
+    
+RUN wget -O /usr/bin/skopeo ${BASE_URL}/${VERSION}/skopeo-linux-${ARCH} && \
     chmod +x /usr/bin/skopeo && \
     skopeo --version
 
