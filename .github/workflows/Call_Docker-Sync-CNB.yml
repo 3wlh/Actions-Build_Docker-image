@@ -122,6 +122,7 @@ jobs:
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
           echo "✅ 开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
+          echo "✅ 加速镜像：${MIRROR_IMAGE}:${IMAGE_TAG}"
           echo "✅ 目标仓库：${CNB_REPO}:${IMAGE_TAG}"
           echo "✅ 目标架构：${{ inputs.platform }}"
 
