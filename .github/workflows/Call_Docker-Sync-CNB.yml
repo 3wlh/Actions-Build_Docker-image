@@ -117,7 +117,8 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
-          DOCKERHUB_REPO: ${{ env.MIRROR_IMAGE }}
+          DOCKERHUB_REPO: ${{ env.image_name }}
+          MIRROR_IMAGE: ${{ env.MIRROR_IMAGE }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
           echo "✅ 开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
@@ -126,15 +127,15 @@ jobs:
 
           if [ "${{ inputs.platform }}" = "all" ]; then
             echo "同步所有架构"
-            docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}
+            docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${MIRROR_IMAGE}:${IMAGE_TAG}
           elif [ "${{ inputs.platform }}" = "linux/amd64,linux/arm64" ]; then
             echo "✅ 同步 amd64 和 arm64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             
             SOURCES=""
-            [ -n "$AMD64_DIGEST" ] && SOURCES="${SOURCES} ${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}"
-            [ -n "$ARM64_DIGEST" ] && SOURCES="${SOURCES} ${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}"
+            [ -n "$AMD64_DIGEST" ] && SOURCES="${SOURCES} ${MIRROR_IMAGE}:${IMAGE_TAG}@${AMD64_DIGEST}"
+            [ -n "$ARM64_DIGEST" ] && SOURCES="${SOURCES} ${MIRROR_IMAGE}:${IMAGE_TAG}@${ARM64_DIGEST}"
             
             if [ -n "$SOURCES" ]; then
               docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
@@ -146,7 +147,7 @@ jobs:
             echo "✅ 同步 amd64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$AMD64_DIGEST" ]; then
-              SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}"
+              SOURCES="${MIRROR_IMAGE}:${IMAGE_TAG}@${AMD64_DIGEST}"
               
               TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
               if [ -n "$TARGET_MANIFEST" ]; then
@@ -165,7 +166,7 @@ jobs:
             echo "✅ 同步 arm64 架构"
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$ARM64_DIGEST" ]; then
-              SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}"
+              SOURCES="${MIRROR_IMAGE}:${IMAGE_TAG}@${ARM64_DIGEST}"
               
               TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
               if [ -n "$TARGET_MANIFEST" ]; then
