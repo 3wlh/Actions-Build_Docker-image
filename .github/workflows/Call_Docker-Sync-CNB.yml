@@ -94,49 +94,28 @@ jobs:
             echo "skip=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Mirror acceleration images
-        run: |
-          IMAGE=${{ env.image_name }}
-          MIRROR_PREFIX="mirror.ccs.tencentyun.com"
-          if echo "$IMAGE" | grep -q "^docker.io/"; then
-              MIRROR_IMAGE=$(echo "$IMAGE" | sed "s|^docker.io/|${MIRROR_PREFIX}/|")
-          elif echo "$IMAGE" | grep -q "^library/"; then
-              MIRROR_IMAGE="${MIRROR_PREFIX}/${IMAGE}"
-          elif echo "$IMAGE" | grep -q "/"; then
-              if echo "$IMAGE" | grep -q "^[a-zA-Z0-9_-]*/"; then
-                  MIRROR_IMAGE="${MIRROR_PREFIX}/${IMAGE}"
-              else
-                  MIRROR_IMAGE=$(echo "$IMAGE" | sed "s|^[^/]*/|${MIRROR_PREFIX}/|")
-              fi
-          else
-              MIRROR_IMAGE="${MIRROR_PREFIX}/library/${IMAGE}"
-          fi
-          echo "MIRROR_IMAGE=$MIRROR_IMAGE" >> $GITHUB_ENV
-
       - name: Pull and Sync images
         if: steps.check.outputs.skip != 'true'
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
           DOCKERHUB_REPO: ${{ env.image_name }}
-          MIRROR_IMAGE: ${{ env.MIRROR_IMAGE }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
           echo "✅ 开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
-          echo "✅ 加速镜像：${MIRROR_IMAGE}:${IMAGE_TAG}"
           echo "✅ 目标仓库：${CNB_REPO}:${IMAGE_TAG}"
           echo "✅ 目标架构：${{ inputs.platform }}"
 
           if [ "${{ inputs.platform }}" = "all" ]; then
             echo "同步所有架构"
-            docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${MIRROR_IMAGE}:${IMAGE_TAG}
+            docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}
           elif [ "${{ inputs.platform }}" = "linux/amd64,linux/arm64" ]; then
             echo "✅ 同步 amd64 和 arm64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             
             SOURCES=""
-            [ -n "$AMD64_DIGEST" ] && SOURCES="${SOURCES} ${MIRROR_IMAGE}:${IMAGE_TAG}@${AMD64_DIGEST}"
-            [ -n "$ARM64_DIGEST" ] && SOURCES="${SOURCES} ${MIRROR_IMAGE}:${IMAGE_TAG}@${ARM64_DIGEST}"
+            [ -n "$AMD64_DIGEST" ] && SOURCES="${SOURCES} ${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}"
+            [ -n "$ARM64_DIGEST" ] && SOURCES="${SOURCES} ${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}"
             
             if [ -n "$SOURCES" ]; then
               docker buildx imagetools create --tag ${CNB_REPO}:${IMAGE_TAG} $SOURCES
@@ -148,7 +127,7 @@ jobs:
             echo "✅ 同步 amd64 架构"
             AMD64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$AMD64_DIGEST" ]; then
-              SOURCES="${MIRROR_IMAGE}:${IMAGE_TAG}@${AMD64_DIGEST}"
+              SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${AMD64_DIGEST}"
               
               TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
               if [ -n "$TARGET_MANIFEST" ]; then
@@ -167,7 +146,7 @@ jobs:
             echo "✅ 同步 arm64 架构"
             ARM64_DIGEST=$(docker buildx imagetools inspect ${DOCKERHUB_REPO}:${IMAGE_TAG} --raw | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest' | head -1)
             if [ -n "$ARM64_DIGEST" ]; then
-              SOURCES="${MIRROR_IMAGE}:${IMAGE_TAG}@${ARM64_DIGEST}"
+              SOURCES="${DOCKERHUB_REPO}:${IMAGE_TAG}@${ARM64_DIGEST}"
               
               TARGET_MANIFEST=$(docker buildx imagetools inspect ${CNB_REPO}:${IMAGE_TAG} --raw 2>/dev/null)
               if [ -n "$TARGET_MANIFEST" ]; then
