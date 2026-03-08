@@ -9,8 +9,8 @@ ENV ARCH=amd64 \
     VERSION=v1.22.0 \
     BASE_URL=https://github.com/lework/skopeo-binary/releases/download
     
-RUN wget -O /usr/bin/skopeo ${BASE_URL}/${VERSION}/skopeo-linux-${ARCH} &&\
-	chmod +x /usr/bin/skopeo &&\
+RUN wget -qO /usr/bin/skopeo ${BASE_URL}/${VERSION}/skopeo-linux-${ARCH} && \
+	chmod +x /usr/bin/skopeo && \
 	skopeo --version
     
 ENTRYPOINT ["/bin/bash"]
