@@ -95,10 +95,29 @@ jobs:
           fi
 
       - name: Pull and Sync images
+        run: |
+          IMAGE=${{ env.image_name }}
+          MIRROR_PREFIX="mirror.ccs.tencentyun.com"
+          if echo "$IMAGE" | grep -q "^docker.io/"; then
+              MIRROR_IMAGE=$(echo "$IMAGE" | sed "s|^docker.io/|${MIRROR_PREFIX}/|")
+          elif echo "$IMAGE" | grep -q "^library/"; then
+              MIRROR_IMAGE="${MIRROR_PREFIX}/${IMAGE}"
+          elif echo "$IMAGE" | grep -q "/"; then
+              if echo "$IMAGE" | grep -q "^[a-zA-Z0-9_-]*/"; then
+                  MIRROR_IMAGE="${MIRROR_PREFIX}/${IMAGE}"
+              else
+                  MIRROR_IMAGE=$(echo "$IMAGE" | sed "s|^[^/]*/|${MIRROR_PREFIX}/|")
+              fi
+          else
+              MIRROR_IMAGE="${MIRROR_PREFIX}/library/${IMAGE}"
+          fi
+          echo "MIRROR_IMAGE=$MIRROR_IMAGE" >> $GITHUB_ENV
+
+      - name: Pull and Sync images
         if: steps.check.outputs.skip != 'true'
         env:
           CNB_REPO: docker.cnb.cool/3wlh/docker-repo/${{ env.name }}
-          DOCKERHUB_REPO: ${{ env.image_name }}
+          DOCKERHUB_REPO: ${{ env.MIRROR_IMAGE }}
           IMAGE_TAG: ${{ env.image_tag }}
         run: |
           echo "✅ 开始同步镜像：${DOCKERHUB_REPO}:${IMAGE_TAG}"
