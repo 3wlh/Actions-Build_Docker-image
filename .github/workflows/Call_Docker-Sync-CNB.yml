@@ -94,7 +94,7 @@ jobs:
             echo "skip=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Pull and Sync images
+      - name: Mirror acceleration images
         run: |
           IMAGE=${{ env.image_name }}
           MIRROR_PREFIX="mirror.ccs.tencentyun.com"
