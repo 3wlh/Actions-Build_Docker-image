@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
               for arch in amd64 arm64; do
                 echo "📦 编译 $os-$arch"
                 # export CGO_ENABLED=0 && export GOOS=$os && export GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
-                go env -w GOOS=$os && go env -w GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                SET CGO_ENABLED=0 && SET GOOS=$os && SET GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
                 md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
                 sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
               done
