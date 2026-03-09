@@ -40,7 +40,7 @@ jobs:
             cd -
             
             # 创建校验和文件
-            cat ./skopeo/bin/skopeo-{darwin,linux}-{amd64,arm64}.{md5,sha256} > CHECKSUMS.txt
+            cat ./skopeo/bin/skopeo-{darwin,linux,windows}-{amd64,arm64}.{md5,sha256} > CHECKSUMS.txt
            
             # 设置输出变量
             echo "ADD_TAG=${APP_VERSION}" >> $GITHUB_ENV
