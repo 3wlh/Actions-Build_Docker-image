@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM alpine
 
 RUN apt update && \
     apt install -y --no-install-recommends \
