@@ -33,23 +33,17 @@ jobs:
             for os in linux darwin; do
               for arch in amd64 arm64; do
                 if [[ "$os" == "linux" ]]; then
-                  ldflags="-buildmode=pie -ldflags='-extldflags -static'"
+                  ldflags="-s -w"
                 else
                   ldflags=""
                 fi
                 echo "📦 编译 $os-$arch"
-                CGO_ENABLED=0 GO111MODULE=on GOOS=$os GOARCH=$arch go build -mod=vendor $ldflags -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                CGO_ENABLED=0 GO111MODULE=on GOOS=$os GOARCH=$arch go build -ldflags "$ldflags" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
                 md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
                 sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
               done
-            done
-            
-            echo "📦 编译 linux-ppc64le"
-            CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=ppc64le go build -mod=vendor -buildmode=pie -ldflags='-extldflags -static' -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-linux-ppc64le ./cmd/skopeo
-            md5sum ./bin/skopeo-linux-ppc64le > ./bin/skopeo-linux-ppc64le.md5
-            sha256sum ./bin/skopeo-linux-ppc64le > ./bin/skopeo-linux-ppc64le.sha256
-            
-            cd ..
+            done            
+            cd -
             
             # 创建校验和文件
             cat ./skopeo/bin/skopeo-{darwin,linux}-{amd64,arm64}.{md5,sha256} > CHECKSUMS.txt
