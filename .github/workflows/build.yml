@@ -9,93 +9,75 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
       - name: Build Skopeo
         id: build_skopeo
         run: |
           set -eux
           APP=skopeo
           APP_REPO="https://github.com/containers/skopeo.git"
+          APP_VERSION=$(curl -s https://api.github.com/repos/containers/skopeo/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Time=$(date "+%Y.%m.%d_%H%M%S")" >> $GITHUB_ENV
 
-          tags="$(git ls-remote --tags $APP_REPO | grep 'v[1-9]\.[0-9]*\.[0-9]*$' | awk -F'tags/' '{print $2}' | sort -t. -k1,1n -k2,2n -k3,3n)"
-          APP_VERSION=$(printf "%s" "$tags" | tail -1)
-          ADD_TAG=""
-          new_tags="$(printf "%s" "$tags"| sed -n '{/\.0$/{g;p}};h' | tail -4) $(printf "%s" "$tags" | tail -1)"
-          echo "::debug::[Tags] $new_tags"
+          echo "✅ 编译版本：${APP_VERSION}"
+          if [[ -n "${APP_VERSION}" ]]; then
+            echo "✅ 拉取仓库：${APP_REPO}"
+            git clone -q --depth=1 --branch $APP_VERSION $APP_REPO
+            cd ${APP}
 
-          # golang:1.24-alpine
-          build_image="golang:1.24-alpine"
-          docker pull "${build_image}"
-
-          for t in $new_tags; do
-            echo "[check] $t"
-            b=$(echo "${APP_VERSION}" | grep -w ${t} | wc -l)
-            if [[ $b == 0 ]]; then
-              echo "::group::[Build] $t"
-              git clone -q --depth=1 --branch $t --progress $APP_REPO
-              pushd ${APP}
-              git checkout -b $t $t
-              git branch
-              
-              # Linux builds
-              docker run --rm -t -v $PWD:/build "${build_image}" sh -c "apk update && apk add musl-dev && cd /build && CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=amd64 go build -mod=vendor '-buildmode=pie' -ldflags '-extldflags -static' -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-linux-amd64 ./cmd/skopeo && md5sum ./bin/skopeo-linux-amd64 > ./bin/skopeo-linux-amd64.md5 && sha256sum ./bin/skopeo-linux-amd64 > ./bin/skopeo-linux-amd64.sha256"
-              
-              docker run --rm -t -v $PWD:/build "${build_image}" sh -c "apk update && apk add musl-dev && cd /build && CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=arm64 go build -mod=vendor '-buildmode=pie' -ldflags '-extldflags -static' -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-linux-arm64 ./cmd/skopeo && md5sum ./bin/skopeo-linux-arm64 > ./bin/skopeo-linux-arm64.md5 && sha256sum ./bin/skopeo-linux-arm64 > ./bin/skopeo-linux-arm64.sha256"
-              
-              docker run --rm -t -v $PWD:/build "${build_image}" sh -c "apk update && apk add musl-dev && cd /build && CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=ppc64le go build -mod=vendor '-buildmode=pie' -ldflags '-extldflags -static' -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-linux-ppc64le ./cmd/skopeo && md5sum ./bin/skopeo-linux-ppc64le > ./bin/skopeo-linux-ppc64le.md5 && sha256sum ./bin/skopeo-linux-ppc64le > ./bin/skopeo-linux-ppc64le.sha256"
-
-              # Darwin builds
-              docker run --rm -t -v $PWD:/build "${build_image}" sh -c "apk update && apk add musl-dev && cd /build && CGO_ENABLED=0 GO111MODULE=on GOOS=darwin GOARCH=amd64 go build -mod=vendor -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-darwin-amd64 ./cmd/skopeo && md5sum ./bin/skopeo-darwin-amd64 > ./bin/skopeo-darwin-amd64.md5 && sha256sum ./bin/skopeo-darwin-amd64 > ./bin/skopeo-darwin-amd64.sha256"
-              
-              docker run --rm -t -v $PWD:/build "${build_image}" sh -c "apk update && apk add musl-dev && cd /build && CGO_ENABLED=0 GO111MODULE=on GOOS=darwin GOARCH=arm64 go build -mod=vendor -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-darwin-arm64 ./cmd/skopeo && md5sum ./bin/skopeo-darwin-arm64 > ./bin/skopeo-darwin-arm64.md5 && sha256sum ./bin/skopeo-darwin-arm64 > ./bin/skopeo-darwin-arm64.sha256"
-              
-              ls -al bin/
-              cd ../
-              ls -al ./
-              ADD_TAG=$t
-              
-              echo "::debug::[Push file]"
-              echo "${t}" >> version.txt
-              git config --global user.email "lework@yeah.net"
-              git config --global user.name "lework"
-              git config --global --add safe.directory /github/workspace
-              git add version.txt
-              git commit -m "$APP $ADD_TAG (Github Actions Automatically Built in `date +"%Y-%m-%d %H:%M"`)"
-              echo "ADD_TAG=${ADD_TAG}" >> $GITHUB_OUTPUT
-              cat ./skopeo/bin/skopeo-{darwin,linux}-{amd64,arm64}.{md5,sha256} > CHECKSUMS.txt
-              cat ./skopeo/bin/skopeo-linux-ppc64le.{md5,sha256} >> CHECKSUMS.txt
-              echo "::endgroup::"
-              popd
-              break
-            else
-              echo "::debug::[skip] $t"
+            for os in linux darwin; do
+              for arch in amd64 arm64; do
+                if [[ "$os" == "linux" ]]; then
+                  ldflags="-buildmode=pie -ldflags '-extldflags -static'"
+                else
+                  ldflags=""
+                fi
+                echo "📦 编译 $os-$arch"
+                CGO_ENABLED=0 GO111MODULE=on GOOS=$os GOARCH=$arch go build -mod=vendor $ldflags -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
+                sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
+              done
+            done
+            
+            echo "📦 编译 linux-ppc64le"
+            CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=ppc64le go build -mod=vendor -buildmode=pie -ldflags '-extldflags -static' -gcflags '' -tags 'exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp' -o ./bin/skopeo-linux-ppc64le ./cmd/skopeo
+            md5sum ./bin/skopeo-linux-ppc64le > ./bin/skopeo-linux-ppc64le.md5
+            sha256sum ./bin/skopeo-linux-ppc64le > ./bin/skopeo-linux-ppc64le.sha256
+            
+            cd ..
+            
+            # 创建校验和文件
+            cat ./skopeo/bin/skopeo-{darwin,linux}-{amd64,arm64}.{md5,sha256} > CHECKSUMS.txt
+            cat ./skopeo/bin/skopeo-linux-ppc64le.{md5,sha256} >> CHECKSUMS.txt
+            
+            # 设置输出变量
+            echo "ADD_TAG=${APP_VERSION}" >> $GITHUB_ENV
+            if [ -d "./skopeo/bin" ] && [ "$(ls -A ./skopeo/bin)" ]; then
+              echo "✅ 编译成功"
+              echo "status=success" >> $GITHUB_OUTPUT
             fi
-          done
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        if: ${{ steps.build_skopeo.outputs.ADD_TAG != '' }}
+          else
+            echo "❌ 未获取到版本号"
+          fi
+
+      - name: Upload as release assets
+        if: (steps.build_skopeo.outputs.status == 'success')
+        uses: ncipollo/release-action@main
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: ${{ steps.build_skopeo.outputs.ADD_TAG != '' }}
-        with:
+          tag: GitHub-Actions_${{ env.ADD_TAG }}
+          name: ${{ inputs.package }}
+          artifacts: ./skopeo/bin/*
+          body: |
+            ## 编译信息
+            - 编译时间：`${{ env.Time }}`
+            - 版本：`${{ env.ADD_TAG }}`
+          allowUpdates: true
+          removeArtifacts: false
+          replacesArtifacts: true
+          makeLatest: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: "${{ steps.build_skopeo.outputs.ADD_TAG }}"
-          files: |
-            ./skopeo/bin/skopeo-linux-amd64
-            ./skopeo/bin/skopeo-linux-amd64.md5
-            ./skopeo/bin/skopeo-linux-amd64.sha256
-            ./skopeo/bin/skopeo-linux-arm64
-            ./skopeo/bin/skopeo-linux-arm64.md5
-            ./skopeo/bin/skopeo-linux-arm64.sha256
-            ./skopeo/bin/skopeo-linux-ppc64le
-            ./skopeo/bin/skopeo-linux-ppc64le.md5
-            ./skopeo/bin/skopeo-linux-ppc64le.sha256
-            ./skopeo/bin/skopeo-darwin-amd64
-            ./skopeo/bin/skopeo-darwin-amd64.md5
-            ./skopeo/bin/skopeo-darwin-amd64.sha256
-            ./skopeo/bin/skopeo-darwin-arm64
-            ./skopeo/bin/skopeo-darwin-arm64.md5
-            ./skopeo/bin/skopeo-darwin-arm64.sha256
-          body_path: ./CHECKSUMS.txt
