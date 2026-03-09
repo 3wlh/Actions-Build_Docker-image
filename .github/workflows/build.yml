@@ -28,11 +28,12 @@ jobs:
             echo "✅ 拉取仓库：${APP_REPO}"
             git clone -q --depth=1 --branch $APP_VERSION $APP_REPO
             cd ${APP}
-
+            go env -w CGO_ENABLED=0
             for os in linux windows darwin; do
               for arch in amd64 arm64; do
                 echo "📦 编译 $os-$arch"
-                CGO_ENABLED=0 && GO111MODULE=on && GOOS=$os && GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                # export CGO_ENABLED=0 && export GOOS=$os && export GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                go env -w GOOS=$os && go env -w GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
                 md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
                 sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
               done
