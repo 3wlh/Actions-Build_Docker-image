@@ -1,8 +1,7 @@
 FROM alpine
 
-RUN apt update && \
-    apt install -y --no-install-recommends \
-    jq wget ca-certificates && \
+RUN apk update && apk upgrade && \
+    apk add jq wget ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 ENV ARCH=amd64 \
