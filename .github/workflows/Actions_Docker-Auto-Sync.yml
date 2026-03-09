@@ -2,7 +2,7 @@ name: Actions Docker Auto Sync CNB
 
 on:
   schedule:
-    #- cron: "* * * * *" # 每三天同步一次
+    - cron: #"* * * * *" # 每三天同步一次
 
 jobs:
   sync_napcat:
