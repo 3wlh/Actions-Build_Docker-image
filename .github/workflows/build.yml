@@ -37,7 +37,7 @@ jobs:
                   ldflags=""
                 fi
                 echo "📦 编译 $os-$arch"
-                CGO_ENABLED=0 && GO111MODULE=on && GOOS=$os && GOARCH=$arch && go build -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                CGO_ENABLED=0 && GO111MODULE=on && GOOS=$os && GOARCH=$arch && go build -ldflags "$ldflags" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
                 md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
                 sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
               done
