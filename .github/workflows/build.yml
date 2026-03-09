@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,12 +28,12 @@ jobs:
             echo "✅ 拉取仓库：${APP_REPO}"
             git clone -q --depth=1 --branch $APP_VERSION $APP_REPO
             cd ${APP}
-            go env -w CGO_ENABLED=0
+
             for os in linux windows darwin; do
               for arch in amd64 arm64; do
                 echo "📦 编译 $os-$arch"
                 # export CGO_ENABLED=0 && export GOOS=$os && export GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
-                SET CGO_ENABLED=0 && SET GOOS=$os && SET GOARCH=$arch && go build -ldflags "-s -w" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                CGO_ENABLED=0 && GOOS=$os && GOARCH=$arch && go build -ldflags "-s -w" -tags "containers_image_openpgp" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
                 md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
                 sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
               done
