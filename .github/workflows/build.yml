@@ -15,10 +15,14 @@ jobs:
         with:
           go-version: "1.25"
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgpgme-dev pkg-config"1.25"
+
       - name: Build Skopeo
         id: build_skopeo
         run: |
-          set -eux
           APP=skopeo
           APP_REPO="https://github.com/containers/skopeo.git"
           APP_VERSION=$(curl -s https://api.github.com/repos/containers/skopeo/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
@@ -38,7 +42,7 @@ jobs:
                   ldflags=""
                 fi
                 echo "📦 编译 $os-$arch"
-                CGO_ENABLED=0 GO111MODULE=on GOOS=$os GOARCH=$arch go build -ldflags "$ldflags" -o ./bin/skopeo-$os-$arch ./cmd/skopeo
+                CGO_ENABLED=0 GO111MODULE=on GOOS=$os GOARCH=$arch go build -o ./bin/skopeo-$os-$arch ./cmd/skopeo
                 md5sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.md5
                 sha256sum ./bin/skopeo-$os-$arch > ./bin/skopeo-$os-$arch.sha256
               done
@@ -47,8 +51,7 @@ jobs:
             
             # 创建校验和文件
             cat ./skopeo/bin/skopeo-{darwin,linux}-{amd64,arm64}.{md5,sha256} > CHECKSUMS.txt
-            cat ./skopeo/bin/skopeo-linux-ppc64le.{md5,sha256} >> CHECKSUMS.txt
-            
+           
             # 设置输出变量
             echo "ADD_TAG=${APP_VERSION}" >> $GITHUB_ENV
             if [ -d "./skopeo/bin" ] && [ "$(ls -A ./skopeo/bin)" ]; then
