@@ -1,11 +1,12 @@
 name: Actions Docker Auto Sync CNB
 
-#on:
-  #schedule:
-    #- cron: "0 0 */3 * *" # 每三天同步一次
+on:
+  schedule:
+    - cron: "0 0 */3 * *" # 每三天同步一次
 
 jobs:
   sync_napcat:
+    if: false
     uses: ./.github/workflows/Call_Docker-Sync-CNB.yml
     secrets: inherit
     with:
