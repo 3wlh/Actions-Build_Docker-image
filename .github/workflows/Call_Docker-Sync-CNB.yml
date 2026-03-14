@@ -37,7 +37,7 @@ jobs:
 
       - name: Login to CNB
         run: |
-          docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
+          docker login -u cnb -p ${{ secrets.TOKEN_CNB }} docker.cnb.cool
 
       - name: Check if sync needed
         id: check
