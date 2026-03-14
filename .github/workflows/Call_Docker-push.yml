@@ -41,7 +41,7 @@ jobs:
       - name: Login to CNB
         if: ${{ inputs.repo == 'docker-cnb' || inputs.repo == 'all' }}
         run: |
-          docker login -u cnb -p ${{ secrets.CNB_TOKEN }} docker.cnb.cool
+          docker login -u cnb -p ${{ secrets.TOKEN_CNB }} docker.cnb.cool
 
       - name: Buildx and Docker image push to Docker Hub
         if: ${{ inputs.repo == 'docker-hub' || inputs.repo == 'all' }}
