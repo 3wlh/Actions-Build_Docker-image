@@ -4,78 +4,133 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-all-platforms:
+  build-android-aar-only:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出 tun2socks 源码（核心是 engine 目录）
+      # 1. 检出源码（完整历史）
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          repository: xjasonlyu/tun2socks  # 若你是 fork 仓库，改为你的仓库
-          fetch-depth: 1
+          repository: xjasonlyu/tun2socks
+          fetch-depth: 0
+          path: tun2socks
 
-      # 2. 安装 Go 1.21（兼容 gomobile 和 tun2socks）
+      # 2. 安装 Go 1.21.9（固定版本）
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'  # 推荐 1.21+，兼容 gVisor
+          go-version: '1.21.9'
           cache: true
+          cache-dependency-path: tun2socks/go.sum
 
-      # 3. 安装 Android NDK（AAR 编译必备）
+      # 3. 安装 Android NDK r25c（固定路径）
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
+          ndk-path: /usr/local/lib/android/sdk/ndk/25.2.9519653
           add-to-path: true
 
-      # 4. 安装 AAR 编译依赖（JDK + 基础工具）
-      - name: Install build dependencies
+      # 4. 安装系统依赖（JDK + 安卓构建工具）
+      - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y make zip build-essential openjdk-17-jdk
-          # 设置 JAVA_HOME（必须）
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
+          sudo apt install -y --no-install-recommends \
+            make zip build-essential openjdk-17-jdk \
+            android-sdk-build-tools-34.0.0 android-sdk-platform-21
+          
+          # 配置全局环境变量
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      # 5. 核心：执行 Makefile 编译所有架构（含 Android）
-      - name: Build all platforms (include Android)
+      # 5. 核心：在 YAML 中安装 gomobile（替代 Makefile 中的逻辑）
+      - name: Install gomobile (in YAML)
         run: |
-          export ANDROID_NDK_ROOT=${ANDROID_NDK_HOME:-/usr/local/lib/android/sdk/ndk/25.2.9519653}
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          curl -sSfL https://raw.githubusercontent.com/3wlh/Actions-Docker/refs/heads/main/tun2socks/Makefile > Makefile
-          # 设置 NDK 环境变量
-          export ANDROID_NDK_ROOT=${ANDROID_NDK_HOME}
-          # 编译所有架构（桌面 + Android）
-          make all
-          # 列出产物，验证编译结果
-          ls -lh build/
-          file build/tun2socks.aar  # 验证 AAR 文件格式
+          # 设置 Go 国内代理（解决 golang.org/x 包拉取失败）
+          go env -w GOPROXY=https://goproxy.cn,direct
+          
+          # 安装指定版本的 gomobile/gobind（适配 Go 1.21）
+          go install golang.org/x/mobile@v0.0.0-20240228211648-156603750552
+          go install golang.org/x/mobile/cmd/gobind@v0.0.0-20240228211648-156603750552
+          
+          # 手动拉取 bind 依赖（确保包存在）
+          go get golang.org/x/mobile/bind@v0.0.0-20240228211648-156603750552
+          
+          # 初始化 gomobile（指定 NDK 路径）
+          gomobile init -ndk ${ANDROID_NDK_ROOT}
+          
+          # 验证 gomobile 安装
+          gomobile version
+          gobind -version
+        shell: /usr/bin/bash -e {0}
 
-      # 6. 上传 AAR 产物（可手动下载）
+      # 6. 编译 AAR（调用极简 Makefile）
+      - name: Build tun2socks AAR
+        run: |
+          # 进入源码目录
+          cd tun2socks
+          
+          # 写入极简 Makefile（避免拉取失败）
+          cat > Makefile << 'EOF'
+          BUILD_DIR     := build
+          MODULE        := github.com/xjasonlyu/tun2socks/v2
+          CGO_ENABLED   := 1
+          GO111MODULE   := on
+          ANDROID_API   := 21
+
+          BUILD_COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+          BUILD_VERSION := $(shell git describe --abbrev=0 --tags HEAD 2>/dev/null || echo "unknown")
+          LDFLAGS       := -w -s -X "$(MODULE)/internal/version.Version=$(BUILD_VERSION)" -X "$(MODULE)/internal/version.GitCommit=$(BUILD_COMMIT)"
+
+          aar:
+          	mkdir -p $(BUILD_DIR)
+          	cd engine && \
+          		go mod tidy && \
+          		gomobile bind -v \
+          		-target android \
+          		-androidapi $(ANDROID_API) \
+          		-ndk $(ANDROID_NDK_ROOT) \
+          		-ldflags '$(LDFLAGS)' \
+          		-o ../$(BUILD_DIR)/tun2socks.aar \
+          		./...
+
+          release: aar
+          	zip -qmj $(BUILD_DIR)/tun2socks-aar-$(BUILD_VERSION).zip $(BUILD_DIR)/tun2socks.aar
+
+          clean:
+          	rm -rf $(BUILD_DIR)
+          	rm -rf /tmp/gomobile-work-*
+
+          all: release
+          EOF
+          
+          # 执行编译
+          make clean
+          make all
+          
+          # 验证产物
+          ls -lh build/
+          if [ ! -f "build/tun2socks.aar" ]; then
+            echo "ERROR: AAR 文件未生成！" && exit 1
+          fi
+        shell: /usr/bin/bash -e {0}
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          ANDROID_NDK_ROOT: /usr/local/lib/android/sdk/ndk/25.2.9519653
+
+      # 7. 上传 AAR 产物
       - name: Upload AAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: tun2socks-android-aar
-          path: build/*.zip  # 上传打包后的 AAR zip
+          path: tun2socks/build/*.zip
 
-      # 7. 打标签时自动发布到 GitHub Release
-      - name: Publish AAR to Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/*.zip
-          name: AAR Release ${{ github.ref_name }}
-          body: |
-            📱 tun2socks Android AAR 库（仅 AAR）
-            - 兼容版本：Android 5.0+ (API 21)
-            - NDK 版本：r25c
-            - Go 版本：1.21
-            - JDK 版本：17
-            - 提交哈希：${{ github.sha }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 8. 可选：清理构建产物（节省空间）
+      # 8. 清理
       - name: Clean up
         if: always()
-        run: make clean
+        run: |
+          cd tun2socks
+          make clean
+          go clean -modcache
