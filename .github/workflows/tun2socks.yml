@@ -1,65 +1,79 @@
-name: Build tun2socks for Android
+name: Auto Build tun2socks (All Platforms)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-android:
+  build-all-platforms:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出代码（如果是 fork 仓库，替换为你的仓库地址）
+      # 1. 检出代码（替换为你的仓库地址）
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          repository: xjasonlyu/tun2socks  # 官方源码仓库
+          repository: xjasonlyu/tun2socks  # 若你是 fork 仓库，改为你的仓库
           fetch-depth: 1
 
-      # 2. 安装 NDK（r25c，兼容最好）
+      # 2. 安装 Go（匹配 tun2socks 要求的版本）
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'  # 推荐 1.21+，兼容 gVisor
+          cache: true
+
+      # 3. 安装 Android NDK（r25c，兼容最好）
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
           add-to-path: true
 
-      # 3. 安装编译依赖
+      # 4. 安装编译依赖（make、zip、golangci-lint 等）
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y cmake build-essential unzip
+          sudo apt install -y make zip build-essential
+          # 安装 golangci-lint（可选，用于 lint 检查）
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
 
-      # 4. 执行官方编译脚本
-      - name: Build tun2socks for Android
+      # 5. 核心：执行 Makefile 编译所有架构（含 Android）
+      - name: Build all platforms (include Android)
         run: |
-          chmod +x ./build-android.sh
-          ./build-android.sh
+          # 设置 NDK 环境变量
+          export ANDROID_NDK_ROOT=${ANDROID_NDK_HOME}
+          # 编译所有架构（桌面 + Android）
+          make all-arch
+          # 打包所有产物为 zip
+          make releases
+          # 列出产物，验证编译结果
+          ls -lh build/
 
-      # 5. 打包产物（按架构分类）
-      - name: Package artifacts
-        run: |
-          mkdir -p tun2socks-android
-          cp build/outputs/android/* tun2socks-android/
-          # 生成版本信息
-          echo "VERSION=$(git describe --tags --always)" > tun2socks-android/version.txt
-          # 压缩
-          zip -r tun2socks-android-${{ github.sha }}.zip tun2socks-android/
-
-      # 6. 上传产物为 workflow 产物
-      - name: Upload build artifacts
+      # 6. 上传所有产物为 workflow 临时产物（可手动下载）
+      - name: Upload all artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tun2socks-android
-          path: tun2socks-android-${{ github.sha }}.zip
+          name: tun2socks-all-platforms
+          path: build/*.zip
 
-      # 7. 如果是打标签，自动发布到 Release
-      - name: Create Release
+      # 7. 打标签时：自动发布到 GitHub Release
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: tun2socks-android-${{ github.sha }}.zip
+          files: build/*.zip
           name: Release ${{ github.ref_name }}
           body: |
-            Auto-built tun2socks for Android
-            Architectures: armeabi-v7a, arm64-v8a, x86, x86_64
-            Commit: ${{ github.sha }}
+            Auto-built tun2socks for all platforms (include Android)
+            - Go Version: 1.21
+            - NDK Version: r25c
+            - Architectures: 
+              - Desktop: Linux/macOS/Windows/FreeBSD/OpenBSD
+              - Android: armeabi-v7a/arm64-v8a/x86/x86_64
+            - Commit: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. 可选：清理构建产物（节省空间）
+      - name: Clean up
+        if: always()
+        run: make clean
