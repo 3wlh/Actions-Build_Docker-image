@@ -36,34 +36,22 @@ jobs:
         run: |
           # 定义要编译的架构列表
           ARCH_LIST=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-          # 对应 CMake 的架构参数
-          CMAKE_ARCH_MAP=(
-            "armeabi-v7a:armv7-a"
-            "arm64-v8a:aarch64"
-            "x86:i686"
-            "x86_64:x86_64"
-          )
-          # 输出目录
-          OUTPUT_DIR="badvpn-android-build"
+          # 输出目录（根目录下，避免路径嵌套）
+          OUTPUT_DIR="./badvpn-android-build"
           mkdir -p $OUTPUT_DIR
+
+          # 进入 badvpn 源码根目录（关键修复：路径正确）
+          cd ./badvpn
 
           # 遍历编译每个架构
           for arch in "${ARCH_LIST[@]}"; do
             echo "===== 编译 $arch 架构 ====="
-            # 创建临时构建目录
-            BUILD_DIR="badvpn/build-$arch"
+            # 创建临时构建目录（在 badvpn 源码内）
+            BUILD_DIR="./build-$arch"
             mkdir -p $BUILD_DIR && cd $BUILD_DIR
 
-            # 匹配 CMake 架构参数
-            for map in "${CMAKE_ARCH_MAP[@]}"; do
-              if [[ $map == $arch:* ]]; then
-                CMAKE_ARCH=${map#*:}
-                break
-              fi
-            done
-
             # CMake 配置（Android 21 兼容最低）
-            cmake ../../ \
+            cmake ../ \
               -DCMAKE_SYSTEM_NAME=Android \
               -DCMAKE_SYSTEM_VERSION=21 \
               -DCMAKE_ANDROID_ARCH_ABI=$arch \
@@ -73,41 +61,36 @@ jobs:
               -DBUILD_TUN2SOCKS=ON \
               -DCMAKE_INSTALL_PREFIX=./install
 
-            # 编译（多核加速）
+            # 编译（多核加速，只编译 tun2socks 目标）
             make -j$(nproc) tun2socks
 
-            # 复制产物到输出目录
-            cp tun2socks ../../$OUTPUT_DIR/tun2socks-$arch
-            cd ../..
-
-            # 验证产物
-            echo "===== 验证 $arch 产物 ====="
-            file $OUTPUT_DIR/tun2socks-$arch
+            # 复制产物到输出目录（带架构后缀）
+            cp tun2socks $OUTPUT_DIR/tun2socks-$arch
+            # 返回 badvpn 源码根目录，准备下一个架构编译
+            cd ../
           done
 
-          # 打包所有架构产物
-          cd $OUTPUT_DIR
-          zip -r badvpn-tun2socks-android-all.zip ./*
-          cd ..
+          # 回到根目录，打包所有产物
+          cd ../
+          zip -r $OUTPUT_DIR/badvpn-tun2socks-android-all.zip $OUTPUT_DIR/tun2socks-*
 
-          # 输出产物信息
+          # 输出产物信息（验证是否编译成功）
           echo "===== 最终产物列表 ====="
           ls -lh $OUTPUT_DIR/
         shell: /usr/bin/bash -e {0}
         env:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_HOME }}
 
-      # 7. 上传产物
+      # 上传产物
       - name: Upload AAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: badvpn-tun2socks ${{ github.ref_name }} (Android)
           path: badvpn-android-build/*.zip
 
-      # 8. 清理
+      # 清理产物（可选）
       - name: Clean up
         if: always()
         run: |
-          cd tun2socks
-          make clean
-          go clean -modcache
+          rm -rf badvpn/build-*
+          rm -rf badvpn-android-build
