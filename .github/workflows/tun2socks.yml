@@ -1,0 +1,65 @@
+name: Build tun2socks for Android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出代码（如果是 fork 仓库，替换为你的仓库地址）
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          repository: xjasonlyu/tun2socks  # 官方源码仓库
+          fetch-depth: 1
+
+      # 2. 安装 NDK（r25c，兼容最好）
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: true
+
+      # 3. 安装编译依赖
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake build-essential unzip
+
+      # 4. 执行官方编译脚本
+      - name: Build tun2socks for Android
+        run: |
+          chmod +x ./build-android.sh
+          ./build-android.sh
+
+      # 5. 打包产物（按架构分类）
+      - name: Package artifacts
+        run: |
+          mkdir -p tun2socks-android
+          cp build/outputs/android/* tun2socks-android/
+          # 生成版本信息
+          echo "VERSION=$(git describe --tags --always)" > tun2socks-android/version.txt
+          # 压缩
+          zip -r tun2socks-android-${{ github.sha }}.zip tun2socks-android/
+
+      # 6. 上传产物为 workflow 产物
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tun2socks-android
+          path: tun2socks-android-${{ github.sha }}.zip
+
+      # 7. 如果是打标签，自动发布到 Release
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: tun2socks-android-${{ github.sha }}.zip
+          name: Release ${{ github.ref_name }}
+          body: |
+            Auto-built tun2socks for Android
+            Architectures: armeabi-v7a, arm64-v8a, x86, x86_64
+            Commit: ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
