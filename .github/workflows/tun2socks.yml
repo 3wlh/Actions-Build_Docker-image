@@ -1,4 +1,4 @@
-name: Auto Build tun2socks (Android AAR Only)
+name: Build badvpn-tun2socks (Android All Arch)
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
-          ndk-path: /usr/local/lib/android/sdk/ndk/25
+          ndk-path: /usr/local/lib/android/sdk/ndk/25.2.9519653
           add-to-path: true
 
       # 安装编译依赖
@@ -33,6 +33,7 @@ jobs:
             libnspr4-dev libnl-3-dev libnl-genl-3-dev  # badvpn 必需依赖
           # 验证 NSPR 安装
           pkg-config --modversion nspr
+          make --version
 
 
       # 编译全架构 tun2socks（核心步骤）
@@ -44,7 +45,7 @@ jobs:
           cd ./badvpn
 
           # 强制指定 NDK r25c 路径（避免用 27）
-          export ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/25
+          export ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/25.2.9519653
 
           for arch in "${ARCH_LIST[@]}"; do
             echo "===== 编译 $arch 架构 ====="
