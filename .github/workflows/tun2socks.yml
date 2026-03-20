@@ -39,7 +39,7 @@ jobs:
       # 5. 核心：执行 Makefile 编译所有架构（含 Android）
       - name: Build all platforms (include Android)
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh > Makefile
+          curl -sSfL https://raw.githubusercontent.com/3wlh/Actions-Docker/refs/heads/main/tun2socks/Makefile > Makefile
           # 设置 NDK 环境变量
           export ANDROID_NDK_ROOT=${ANDROID_NDK_HOME}
           # 编译所有架构（桌面 + Android）
