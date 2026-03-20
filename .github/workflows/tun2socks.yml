@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-android-aar-only:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       # 检出源码
@@ -18,9 +18,9 @@ jobs:
       # 安装 Android NDK r25c（稳定版）
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
+        id: setup-ndk
         with:
           ndk-version: r25c
-          ndk-path: /usr/local/lib/android/sdk/ndk/25.2.9519653
           add-to-path: true
 
       # 安装编译依赖
@@ -34,40 +34,52 @@ jobs:
           # 验证 NSPR 安装
           pkg-config --modversion nspr
           make --version
-
+          ninja --version
+          echo "实际NDK路径: ${{ steps.setup-ndk.outputs.ndk-path }}"
 
       # 编译全架构 tun2socks（核心步骤）
       - name: Build badvpn-tun2socks for all arch
         run: |
+          # 定义架构和编译器映射
+          declare -A ARCH_COMPILER=(
+            ["armeabi-v7a"]="armv7a-linux-androideabi21-clang"
+            ["arm64-v8a"]="aarch64-linux-android21-clang"
+            ["x86"]="i686-linux-android21-clang"
+            ["x86_64"]="x86_64-linux-android21-clang"
+          )
           ARCH_LIST=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
           OUTPUT_DIR="./badvpn-android-build"
           mkdir -p $OUTPUT_DIR
           cd ./badvpn
 
-          # 强制指定 NDK r25c 路径（避免用 27）
-          export ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/25.2.9519653
+          # 关键：使用action输出的实际NDK路径，不硬编码
+          NDK_PATH="${{ steps.setup-ndk.outputs.ndk-path }}"
+          echo "使用NDK路径: $NDK_PATH"
 
           for arch in "${ARCH_LIST[@]}"; do
             echo "===== 编译 $arch 架构 ====="
             BUILD_DIR="./build-$arch"
             mkdir -p $BUILD_DIR && cd $BUILD_DIR
 
-            # CMake 配置：添加策略参数解决版本提示 + 固定 NDK
+            # 核心：用ninja构建，移除行内注释，指定实际NDK路径
             cmake ../ \
+              -G Ninja \  # 强制用ninja，解决make找不到的问题
               -DCMAKE_SYSTEM_NAME=Android \
               -DCMAKE_SYSTEM_VERSION=21 \
               -DCMAKE_ANDROID_ARCH_ABI=$arch \
-              -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT \
+              -DCMAKE_ANDROID_NDK="$NDK_PATH" \
               -DCMAKE_BUILD_TYPE=Release \
               -DBUILD_NOTHING=OFF \
               -DBUILD_TUN2SOCKS=ON \
               -DCMAKE_INSTALL_PREFIX=./install \
-              # 解决 CMake 版本策略提示
               -DCMAKE_POLICY_DEFAULT_CMP0048=NEW \
-              -DCMAKE_POLICY_DEFAULT_CMP0065=NEW
+              -DCMAKE_POLICY_DEFAULT_CMP0065=NEW \
+              # 显式指定编译器
+              -DCMAKE_C_COMPILER="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${ARCH_COMPILER[$arch]}" \
+              -DCMAKE_CXX_COMPILER="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${ARCH_COMPILER[$arch]%clang}clang++"
 
-            # 编译 tun2socks（只编译核心目标，加快速度）
-            make -j$(nproc) tun2socks
+            # 用ninja编译（替代make）
+            ninja tun2socks -j$(nproc)
 
             # 复制产物
             cp tun2socks $OUTPUT_DIR/tun2socks-$arch
