@@ -43,7 +43,7 @@ jobs:
           # 设置 NDK 环境变量
           export ANDROID_NDK_ROOT=${ANDROID_NDK_HOME}
           # 编译所有架构（桌面 + Android）
-          make android-all
+          # make android-all
           # 打包所有产物为 zip
           make releases
           # 列出产物，验证编译结果
