@@ -7,23 +7,23 @@ jobs:
   build-android-aar-only:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出源码
-      - name: Checkout source code
+      # 检出源码
+      - name: Checkout badvpn source
         uses: actions/checkout@v4
         with:
-          repository: xjasonlyu/tun2socks
-          fetch-depth: 0
-          path: tun2socks
+          repository: ambrop72/badvpn
+          fetch-depth: 1
+          path: badvpn
 
-      # 2. 安装 Go 1.21.9
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21.9'
-          cache: true
-          cache-dependency-path: tun2socks/go.sum
+      # 安装编译依赖
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y --no-install-recommends \
+            build-essential cmake ninja-build \
+            gcc g++ git libssl-dev pkg-config zip
 
-      # 3. 安装 Android NDK r25c（固定版本）
+      # 安装 Android NDK r25c（稳定版）
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
@@ -31,124 +31,78 @@ jobs:
           ndk-path: /usr/local/lib/android/sdk/ndk/25.2.9519653
           add-to-path: true
 
-      # 4. 安装 JDK 17 + 安卓 SDK 构建工具（修复核心问题）
-      - name: Install JDK + Android SDK Tools
+      # 编译全架构 tun2socks（核心步骤）
+      - name: Build badvpn-tun2socks for all arch
         run: |
-          # 安装 JDK 17（必须）
-          sudo apt update
-          sudo apt install -y --no-install-recommends \
-            make zip build-essential openjdk-17-jdk wget unzip
-          
-          # 下载 Android SDK Command-line Tools（替代 apt 安装）
-          SDK_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-          SDK_DIR="/usr/local/lib/android/sdk"
-          mkdir -p $SDK_DIR/cmdline-tools
-          wget -q -O cmdline-tools.zip $SDK_URL
-          unzip -q cmdline-tools.zip -d $SDK_DIR/cmdline-tools
-          mv $SDK_DIR/cmdline-tools/cmdline-tools $SDK_DIR/cmdline-tools/latest
-          rm cmdline-tools.zip
-          
-          # 配置 SDK 环境变量
-          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-          echo "$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$SDK_DIR/build-tools/34.0.0" >> $GITHUB_PATH
-          
-          # 接受安卓 SDK 许可（自动确认）
-          yes | sdkmanager --licenses > /dev/null 2>&1
-          
-          # 安装安卓构建工具 34.0.0 和平台 21
-          sdkmanager "build-tools;34.0.0" "platforms;android-21" > /dev/null 2>&1
-          
-          # 验证安装
-          echo "===== 验证安卓工具安装 ====="
-          ls -lh $SDK_DIR/build-tools/34.0.0/
-          ls -lh $SDK_DIR/platforms/android-21/
+          # 定义要编译的架构列表
+          ARCH_LIST=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+          # 对应 CMake 的架构参数
+          CMAKE_ARCH_MAP=(
+            "armeabi-v7a:armv7-a"
+            "arm64-v8a:aarch64"
+            "x86:i686"
+            "x86_64:x86_64"
+          )
+          # 输出目录
+          OUTPUT_DIR="badvpn-android-build"
+          mkdir -p $OUTPUT_DIR
 
-      # 5. 安装 gomobile（在 YAML 中）
-      - name: Install gomobile
-        run: |
-          # 设置 Go 国内代理
-          go env -w GOPROXY=https://goproxy.cn,direct
-          
-          # 安装指定版本的 gomobile/gobind
-          go install golang.org/x/mobile@v0.0.0-20240228211648-156603750552
-          go install golang.org/x/mobile/cmd/gobind@v0.0.0-20240228211648-156603750552
-          
-          # 手动拉取 bind 依赖
-          go get golang.org/x/mobile/bind@v0.0.0-20240228211648-156603750552
-          
-          # 初始化 gomobile（指定 NDK 路径）
-          gomobile init -ndk /usr/local/lib/android/sdk/ndk/25.2.9519653
-          
-          # 验证安装
-          echo "===== 验证 gomobile ====="
-          gomobile version
-          gobind -version
+          # 遍历编译每个架构
+          for arch in "${ARCH_LIST[@]}"; do
+            echo "===== 编译 $arch 架构 ====="
+            # 创建临时构建目录
+            BUILD_DIR="badvpn/build-$arch"
+            mkdir -p $BUILD_DIR && cd $BUILD_DIR
+
+            # 匹配 CMake 架构参数
+            for map in "${CMAKE_ARCH_MAP[@]}"; do
+              if [[ $map == $arch:* ]]; then
+                CMAKE_ARCH=${map#*:}
+                break
+              fi
+            done
+
+            # CMake 配置（Android 21 兼容最低）
+            cmake ../../ \
+              -DCMAKE_SYSTEM_NAME=Android \
+              -DCMAKE_SYSTEM_VERSION=21 \
+              -DCMAKE_ANDROID_ARCH_ABI=$arch \
+              -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBUILD_NOTHING=OFF \
+              -DBUILD_TUN2SOCKS=ON \
+              -DCMAKE_INSTALL_PREFIX=./install
+
+            # 编译（多核加速）
+            make -j$(nproc) tun2socks
+
+            # 复制产物到输出目录
+            cp tun2socks ../../$OUTPUT_DIR/tun2socks-$arch
+            cd ../..
+
+            # 验证产物
+            echo "===== 验证 $arch 产物 ====="
+            file $OUTPUT_DIR/tun2socks-$arch
+          done
+
+          # 打包所有架构产物
+          cd $OUTPUT_DIR
+          zip -r badvpn-tun2socks-android-all.zip ./*
+          cd ..
+
+          # 输出产物信息
+          echo "===== 最终产物列表 ====="
+          ls -lh $OUTPUT_DIR/
         shell: /usr/bin/bash -e {0}
         env:
-          ANDROID_NDK_ROOT: /usr/local/lib/android/sdk/ndk/25.2.9519653
-
-      # 6. 编译 AAR
-      - name: Build tun2socks AAR
-        run: |
-          cd tun2socks
-          
-          # 写入极简 Makefile
-          cat > Makefile << 'EOF'
-          BUILD_DIR     := build
-          MODULE        := github.com/xjasonlyu/tun2socks/v2
-          CGO_ENABLED   := 1
-          GO111MODULE   := on
-          ANDROID_API   := 21
-
-          BUILD_COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-          BUILD_VERSION := $(shell git describe --abbrev=0 --tags HEAD 2>/dev/null || echo "unknown")
-          LDFLAGS       := -w -s -X "$(MODULE)/internal/version.Version=$(BUILD_VERSION)" -X "$(MODULE)/internal/version.GitCommit=$(BUILD_COMMIT)"
-
-          aar:
-          	mkdir -p $(BUILD_DIR)
-          	cd engine && \
-          		go mod tidy && \
-          		gomobile bind -v \
-          		-target android \
-          		-androidapi $(ANDROID_API) \
-          		-ndk $(ANDROID_NDK_ROOT) \
-          		-ldflags '$(LDFLAGS)' \
-          		-o ../$(BUILD_DIR)/tun2socks.aar \
-          		./...
-
-          release: aar
-          	zip -qmj $(BUILD_DIR)/tun2socks-aar-$(BUILD_VERSION).zip $(BUILD_DIR)/tun2socks.aar
-
-          clean:
-          	rm -rf $(BUILD_DIR)
-          	rm -rf /tmp/gomobile-work-*
-
-          all: release
-          EOF
-          
-          # 执行编译
-          make clean
-          make all
-          
-          # 验证产物
-          ls -lh build/
-          if [ ! -f "build/tun2socks.aar" ]; then
-            echo "ERROR: AAR 文件未生成！" && exit 1
-          fi
-        shell: /usr/bin/bash -e {0}
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-          ANDROID_NDK_ROOT: /usr/local/lib/android/sdk/ndk/25.2.9519653
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_HOME }}
 
       # 7. 上传产物
       - name: Upload AAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tun2socks-android-aar
-          path: tun2socks/build/*.zip
+          name: badvpn-tun2socks ${{ github.ref_name }} (Android)
+          path: badvpn-android-build/*.zip
 
       # 8. 清理
       - name: Clean up
