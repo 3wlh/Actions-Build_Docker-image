@@ -49,29 +49,29 @@ jobs:
           make all
           # 列出产物，验证编译结果
           ls -lh build/
+          file build/tun2socks.aar  # 验证 AAR 文件格式
 
-      # 6. 上传所有产物为 workflow 临时产物（可手动下载）
-      - name: Upload all artifacts
+      # 6. 上传 AAR 产物（可手动下载）
+      - name: Upload AAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tun2socks-all-platforms
-          path: build/*.zip
+          name: tun2socks-android-aar
+          path: build/*.zip  # 上传打包后的 AAR zip
 
-      # 7. 打标签时：自动发布到 GitHub Release
-      - name: Create GitHub Release
+      # 7. 打标签时自动发布到 GitHub Release
+      - name: Publish AAR to Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: build/*.zip
-          name: Release ${{ github.ref_name }}
+          name: AAR Release ${{ github.ref_name }}
           body: |
-            Auto-built tun2socks for all platforms (include Android)
-            - Go Version: 1.21
-            - NDK Version: r25c
-            - Architectures: 
-              - Desktop: Linux/macOS/Windows/FreeBSD/OpenBSD
-              - Android: armeabi-v7a/arm64-v8a/x86/x86_64
-            - Commit: ${{ github.sha }}
+            📱 tun2socks Android AAR 库（仅 AAR）
+            - 兼容版本：Android 5.0+ (API 21)
+            - NDK 版本：r25c
+            - Go 版本：1.21
+            - JDK 版本：17
+            - 提交哈希：${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
